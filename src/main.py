@@ -12,8 +12,9 @@ from src.api_consumers import (
     PostMoneyboxBalanceAddApiConsumer,
     PostMoneyboxBalanceSubApiConsumer,
     PostMoneyboxBalanceTransferApiConsumer,
-    GetMoneyboxTransactionsApiConsumer,
+    GetMoneyboxTransactionsApiConsumer, GetPriorityList, UpdatePriorityList,
 )
+from src.custom_types import MoveDirection
 from src.utils import int_or_none
 
 app = typer.Typer()
@@ -129,6 +130,30 @@ def show_logs(
 
     print(consumer)
 
+
+@app.command("get-prioritylist")
+def get_pioritylist():
+    consumer = GetPriorityList()
+    print(consumer)
+
+
+@app.command("update-prioritylist")
+def update_pioritylist(
+        moneybox_id: Annotated[int, typer.Argument(help="The ID of the moneybox.")],
+        direction: Annotated[str, typer.Argument(help="To move direction (supported: up|down).")],
+        n: Annotated[int, typer.Argument(help="The move steps [optional], defaults to 1.")] = 1,
+):
+    try:
+        move_direction = MoveDirection(direction)
+    except:
+        raise typer.BadParameter(f"{direction} unknown move direction.")
+
+    consumer = UpdatePriorityList(
+        moneybox_id=moneybox_id,
+        move_direction=move_direction,
+        move_steps=n,
+    )
+    print(consumer)
 
 if __name__ == "__main__":
     app()

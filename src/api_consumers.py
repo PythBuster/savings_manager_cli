@@ -1,9 +1,12 @@
 from abc import ABC
+from distutils.dep_util import newer
 from enum import StrEnum
 
 import requests
+import typer
 
 from src.config import BASE_URL, PORT
+from src.custom_types import MoveDirection
 from src.utils import exit_with_error, tabulate_str, colorize_number
 
 
@@ -36,6 +39,12 @@ class Endpoint(StrEnum):
 
     DELETE_MONEYBOX = "/api/moneybox/{moneybox_id}"
     """DELETE Endpoint to delete a specific moneybox."""
+
+    GET_PRIORITYLIST = "/api/prioritylist"
+    """GET Endpoint for get prioritylist."""
+
+    UPDATE_PRIORITYLIST = "/api/prioritylist"
+    """UPDATE Endpoint for update prioritylist."""
 
 
 class ApiConsumerFactory(ABC):
@@ -151,7 +160,6 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
 
         self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
         self.post_data = {"amount": amount, "description": description}
-
         self.response = requests.post(self.url, json=self.post_data)
 
     def __str__(self) -> str:
@@ -193,7 +201,6 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
 
         self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
         self.post_data = {"amount": amount, "description": description}
-
         self.response = requests.post(self.url, json=self.post_data)
 
     def __str__(self) -> str:
@@ -241,7 +248,6 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
             "to_moneybox_id": to_moneybox_id,
             "description": description,
         }
-
         self.response = requests.post(self.url, json=self.post_data)
 
     def __str__(self) -> str:
@@ -285,7 +291,6 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             "savings_amount": self.savings_amount,
             "savings_target": self.savings_target,
         }
-
         self.response = requests.post(self.url, json=self.post_data)
 
     def __str__(self) -> str:
@@ -344,8 +349,6 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         if self.new_savings_target is None or self.new_savings_target >= 0:
             self.patch_data["savings_target"] = self.new_savings_target
 
-        from pprint import pprint
-        pprint(self.patch_data)
         self.response = requests.patch(self.url, json=self.patch_data)
 
     def __str__(self) -> str:
@@ -384,7 +387,6 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
         self.n = n
 
         self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
-
         self.response = requests.get(self.url)
 
     def __str__(self) -> str:
@@ -454,3 +456,124 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
             exit_with_error(content=self.response.json())
 
         return f"Deleted moneybox ({self.moneybox_id})."
+
+
+
+class GetPriorityList(ApiConsumerFactory):
+    """`GET: /api/prioritylist` consumer class."""
+
+    def __init__(self):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.GET_PRIORITYLIST,
+        )
+
+        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
+        self.response = requests.get(self.url)
+
+    def __str__(self) -> str:
+        """Parse the response of `GET: /api/prioritylist`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        if not self.response:
+            exit_with_error(content=self.response.json())
+
+        content = self.response.json()["priority_list"]
+
+        headers = content[0].keys()
+        rows = [list(priority.values()) for priority in content]
+
+        return tabulate_str(headers=headers, rows=rows)
+
+
+class UpdatePriorityList(ApiConsumerFactory):
+    """`PATCH: /api/prioritylist` consumer class."""
+
+    def __init__(
+            self,
+            moneybox_id: int,
+            move_direction: MoveDirection,
+            move_steps: int,
+    ):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.GET_PRIORITYLIST,
+        )
+
+        self.moneybox_id = moneybox_id
+        self.move_direction = move_direction
+        self.move_steps = move_steps
+
+        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
+        self.response = None
+        patch_data = self._build_patch_data()
+        self.response = requests.patch(self.url, json=patch_data)
+
+    def _build_patch_data(self) -> dict[str, list[dict[str, int|str]]]:
+        """Build the new priority list dict data.
+
+        :return: priority list dict data.
+        :rtype: :class:`dict[str, list[dict[str, int|str]]]`
+        """
+
+        consumer = GetPriorityList()
+        priority_list = consumer.response.json()["priority_list"]
+
+        # move logic
+        priority_sorted_list = sorted(
+            priority_list,
+            key=lambda item: item["priority"],
+        )
+
+        old_index = None
+        for i, item in enumerate(priority_sorted_list):
+            if item["moneybox_id"] == self.moneybox_id:
+                old_index = i
+                break
+        else:
+            raise typer.BadParameter(
+                f"Moneybox {self.moneybox_id} does not exist or can't be moved "
+                "(e.g. the Overflow Moneybox with priority 0)."
+            )
+
+        if self.move_direction == MoveDirection.UP:
+            new_index = max(0, old_index - self.move_steps)
+        else:
+            new_index = min(len(priority_sorted_list)-1, old_index + self.move_steps)
+
+        priority_sorted_list.insert(new_index, priority_sorted_list.pop(old_index))
+
+        for i, priority in enumerate(priority_sorted_list):
+            priority["priority"] = i+1
+
+        return {
+            "priority_list":
+            [
+                {"moneybox_id": priority["moneybox_id"], "priority": priority["priority"]}
+                for priority in priority_sorted_list
+            ]
+        }
+
+    def __str__(self) -> str:
+        """Parse the response of `PATCH: /api/prioritylist`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        if not self.response:
+            exit_with_error(content=self.response.json())
+
+        content = self.response.json()["priority_list"]
+
+        headers = content[0].keys()
+        rows = [list(priority.values()) for priority in content]
+
+        return tabulate_str(headers=headers, rows=rows)

@@ -10,14 +10,14 @@
 			
 	
 		CLI: ADD AMOUNT
-			myapp add --mb 1 --amount 400  	// Meaning: moneybox_id -> add -> 400
+			myapp add 1 400  	// Meaning: moneybox_id -> add -> 400
 
 			- Description: 	Add amount to moneybox_id		
 			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/add
 
 
 		CLI: SUB AMOUNT
-			myapp sub --mb 1 --amount 400  	// Meaning: moneybox_id -> sub -> 400
+			myapp sub 1 400  	// Meaning: moneybox_id -> sub -> 400
 
 			- Description: 	Sub amount from moneybox_id		
 			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/sub
@@ -25,7 +25,7 @@
 
 
 		CLI: TRANSFER AMOUNT
-			myapp transfer --from-mb 1 --amount 400 --to-mb 2  // Meaning: moneybox_id -> transfer -> 400 > moneybox_id
+			myapp transfer (from-mb=)1 (to-mb=)2 (amount=)400 // Meaning: moneybox_id -> transfer -> 400 > moneybox_id
 
 			- Description: 	Transfer amount from moneybox_id to [moneybox_id]		
 			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/transfert
@@ -33,7 +33,7 @@
 		
 		
 		CLI: VIEW LOGS
-			myapp logs --mb 1 [-n 40]  		// Meaning: moneybox_id -> logs
+			myapp logs 1 [-n 40]  		// Meaning: moneybox_id -> logs
 
 			- Description: 	View [last n] logs of moneybox_id	
 			- API:		GET: 	/api/moneybox/{moneybox_id}/transactions
@@ -48,14 +48,14 @@
 			
 	
 		CLI: UPDATE MONEYBOX
-			myapp update --mb 1 --name holiday  // Meaning: moneybox_id -> update -> [data: name]
+			myapp update 1 --name holiday  // Meaning: moneybox_id -> update -> [data: name]
 
 			- Description: 	Update specific moneybox
 			- API:		PATCH: 	/api/moneybox
 			
 	
 		CLI: LIST MONEYBOX
-			myapp list --mb 1
+			myapp list 1
 			
 			- Description: 	List Moneybox data of moneybox_id	
 			- API:		GET:	/api/moneybox/{moneybox_id}
@@ -63,8 +63,21 @@
 			
 	
 		CLI: DELETE MONEYBOX
-			myapp delete --mb 1  	// Meaning: delete -> moneybox_id
+			myapp delete 1  	// Meaning: delete -> moneybox_id
 
-			- Description: 	Delete moneybox by [moneybox_id]	
+			- Description: 	Delete moneybox by [moneybox_id]
 			- API:		DELETE: /api/moneybox/{moneybox_id}
 
+
+		CLI: GET PRIORITYLIST
+			myapp get-prioritylist
+
+			- Description: 	Get prioritylist
+			- API:		GET: /api/prioritylist
+
+
+		CLI: UPDATE PRIORITYLIST
+			myapp update-prioritylist --mb 1 --up|down [N]  // N i optional, default=1
+
+			- Description: 	Update prioritylist
+			- API:		PATCH: /api/prioritylist
