@@ -463,7 +463,7 @@ class UpdatePriorityList(ApiConsumerFactory):
         super().__init__(
             domain=BASE_URL,
             port=PORT,
-            endpoint=Endpoint.GET_PRIORITYLIST,
+            endpoint=Endpoint.UPDATE_PRIORITYLIST,
         )
 
         self.moneybox_id = moneybox_id
