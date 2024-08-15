@@ -1,0 +1,70 @@
+- Each CLI function will produce an output
+
+
+		CLI: LIST ALL
+			myapp list
+
+			- Description: 	List all moneyboxes 			
+			- API:		GET:	/api/moneyboxes
+			- Example output:
+			
+	
+		CLI: ADD AMOUNT
+			myapp add --mb 1 --amount 400  	// Meaning: moneybox_id -> add -> 400
+
+			- Description: 	Add amount to moneybox_id		
+			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/add
+
+
+		CLI: SUB AMOUNT
+			myapp sub --mb 1 --amount 400  	// Meaning: moneybox_id -> sub -> 400
+
+			- Description: 	Sub amount from moneybox_id		
+			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/sub
+
+
+
+		CLI: TRANSFER AMOUNT
+			myapp transfer --from-mb 1 --amount 400 --to-mb 2  // Meaning: moneybox_id -> transfer -> 400 > moneybox_id
+
+			- Description: 	Transfer amount from moneybox_id to [moneybox_id]		
+			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/transfert
+			
+		
+		
+		CLI: VIEW LOGS
+			myapp logs --mb 1 [-n 40]  		// Meaning: moneybox_id -> logs
+
+			- Description: 	View [last n] logs of moneybox_id	
+			- API:		GET: 	/api/moneybox/{moneybox_id}/transactions
+			
+			
+	
+		CLI: CREATE MONEYBOX
+			myapp new --name holiday  	// Meaning: new -> monebox -> [data: name]
+
+			- Description: 	Create a new moneybox	
+			- API:		POST: 	/api/moneybox
+			
+	
+		CLI: UPDATE MONEYBOX
+			myapp update --mb 1 --name holiday  // Meaning: moneybox_id -> update -> [data: name]
+
+			- Description: 	Update specific moneybox
+			- API:		PATCH: 	/api/moneybox
+			
+	
+		CLI: LIST MONEYBOX
+			myapp list --mb 1
+			
+			- Description: 	List Moneybox data of moneybox_id	
+			- API:		GET:	/api/moneybox/{moneybox_id}
+			- Example output:
+			
+	
+		CLI: DELETE MONEYBOX
+			myapp delete --mb 1  	// Meaning: delete -> moneybox_id
+
+			- Description: 	Delete moneybox by [moneybox_id]	
+			- API:		DELETE: /api/moneybox/{moneybox_id}
+
