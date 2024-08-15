@@ -8,7 +8,7 @@ import tabulate
 
 
 def int_or_none(raw: str) -> int | None:
-    return None if raw == 'None' else int(raw)
+    return None if raw == "None" else int(raw)
 
 
 def exit_with_error(content: dict) -> None:

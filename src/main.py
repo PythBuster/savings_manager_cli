@@ -1,19 +1,17 @@
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional
 
 import typer
-from pydantic import BaseModel
 
-from src.api_consumers import (
-    DeleteMoneyboxApiConsumer,
-    GetMoneyboxApiConsumer,
-    GetMoneyboxesApiConsumer,
-    PatchMoneyboxApiConsumer,
-    PostMoneyboxApiConsumer,
-    PostMoneyboxBalanceAddApiConsumer,
-    PostMoneyboxBalanceSubApiConsumer,
-    PostMoneyboxBalanceTransferApiConsumer,
-    GetMoneyboxTransactionsApiConsumer, GetPriorityList, UpdatePriorityList,
-)
+from src.api_consumers import (DeleteMoneyboxApiConsumer,
+                               GetMoneyboxApiConsumer,
+                               GetMoneyboxesApiConsumer,
+                               GetMoneyboxTransactionsApiConsumer,
+                               GetPriorityList, PatchMoneyboxApiConsumer,
+                               PostMoneyboxApiConsumer,
+                               PostMoneyboxBalanceAddApiConsumer,
+                               PostMoneyboxBalanceSubApiConsumer,
+                               PostMoneyboxBalanceTransferApiConsumer,
+                               UpdatePriorityList)
 from src.custom_types import MoveDirection
 from src.utils import int_or_none
 
@@ -139,9 +137,13 @@ def get_pioritylist():
 
 @app.command("update-prioritylist")
 def update_pioritylist(
-        moneybox_id: Annotated[int, typer.Argument(help="The ID of the moneybox.")],
-        direction: Annotated[str, typer.Argument(help="To move direction (supported: up|down).")],
-        n: Annotated[int, typer.Argument(help="The move steps [optional], defaults to 1.")] = 1,
+    moneybox_id: Annotated[int, typer.Argument(help="The ID of the moneybox.")],
+    direction: Annotated[
+        str, typer.Argument(help="To move direction (supported: up|down).")
+    ],
+    n: Annotated[
+        int, typer.Argument(help="The move steps [optional], defaults to 1.")
+    ] = 1,
 ):
     try:
         move_direction = MoveDirection(direction)
@@ -154,6 +156,7 @@ def update_pioritylist(
         move_steps=n,
     )
     print(consumer)
+
 
 if __name__ == "__main__":
     app()

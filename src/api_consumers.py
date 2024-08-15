@@ -1,5 +1,4 @@
 from abc import ABC
-from distutils.dep_util import newer
 from enum import StrEnum
 
 import requests
@@ -7,7 +6,7 @@ import typer
 
 from src.config import BASE_URL, PORT
 from src.custom_types import MoveDirection
-from src.utils import exit_with_error, tabulate_str, colorize_number
+from src.utils import colorize_number, exit_with_error, tabulate_str
 
 
 class Endpoint(StrEnum):
@@ -311,6 +310,7 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
 
         return tabulate_str(headers=headers, rows=rows)
 
+
 class PatchMoneyboxApiConsumer(ApiConsumerFactory):
     """`PATCH:  /api/moneybox/{moneybox_id}` consumer class."""
 
@@ -337,7 +337,7 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
 
         self.patch_data = {}
 
-        #if self.new_priority >= 0:
+        # if self.new_priority >= 0:
         self.patch_data["priority"] = self.new_priority
 
         if len(self.new_name) > 0:
@@ -410,7 +410,7 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
 
         # filter and get last n entries
         if self.n is not None:
-            content["transaction_logs"] = content["transaction_logs"][-self.n:]
+            content["transaction_logs"] = content["transaction_logs"][-self.n :]
 
         content["transaction_logs"] = [
             {key: colorize_number(key, value) for key, value in data.items()}
@@ -458,7 +458,6 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
         return f"Deleted moneybox ({self.moneybox_id})."
 
 
-
 class GetPriorityList(ApiConsumerFactory):
     """`GET: /api/prioritylist` consumer class."""
 
@@ -495,10 +494,10 @@ class UpdatePriorityList(ApiConsumerFactory):
     """`PATCH: /api/prioritylist` consumer class."""
 
     def __init__(
-            self,
-            moneybox_id: int,
-            move_direction: MoveDirection,
-            move_steps: int,
+        self,
+        moneybox_id: int,
+        move_direction: MoveDirection,
+        move_steps: int,
     ):
         super().__init__(
             domain=BASE_URL,
@@ -515,7 +514,7 @@ class UpdatePriorityList(ApiConsumerFactory):
         patch_data = self._build_patch_data()
         self.response = requests.patch(self.url, json=patch_data)
 
-    def _build_patch_data(self) -> dict[str, list[dict[str, int|str]]]:
+    def _build_patch_data(self) -> dict[str, list[dict[str, int | str]]]:
         """Build the new priority list dict data.
 
         :return: priority list dict data.
@@ -545,17 +544,19 @@ class UpdatePriorityList(ApiConsumerFactory):
         if self.move_direction == MoveDirection.UP:
             new_index = max(0, old_index - self.move_steps)
         else:
-            new_index = min(len(priority_sorted_list)-1, old_index + self.move_steps)
+            new_index = min(len(priority_sorted_list) - 1, old_index + self.move_steps)
 
         priority_sorted_list.insert(new_index, priority_sorted_list.pop(old_index))
 
         for i, priority in enumerate(priority_sorted_list):
-            priority["priority"] = i+1
+            priority["priority"] = i + 1
 
         return {
-            "priority_list":
-            [
-                {"moneybox_id": priority["moneybox_id"], "priority": priority["priority"]}
+            "priority_list": [
+                {
+                    "moneybox_id": priority["moneybox_id"],
+                    "priority": priority["priority"],
+                }
                 for priority in priority_sorted_list
             ]
         }
