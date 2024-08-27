@@ -231,7 +231,7 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
 
     def __init__(
         self,
-        moneybox_name: str,
+        name: str,
         priority: int,
         savings_amount: int = 0,
         savings_target: int | None = None,
@@ -241,14 +241,14 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             port=PORT,
             endpoint=Endpoint.CREATE_MONEYBOX,
         )
-        self.moneybox_name = moneybox_name
+        self.name = name
         self.priority = priority
         self.savings_amount = savings_amount
         self.savings_target = savings_target
 
         self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
         self.post_data = {
-            "name": self.moneybox_name,
+            "name": self.name,
             "priority": self.priority,
             "savings_amount": self.savings_amount,
             "savings_target": self.savings_target,

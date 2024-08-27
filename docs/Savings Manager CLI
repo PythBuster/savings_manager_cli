@@ -41,7 +41,7 @@
 			
 	
 		CLI: CREATE MONEYBOX
-			myapp new --name holiday  	// Meaning: new -> moneybox -> [data: name]
+			myapp new --name holiday --priority 4 --savings_amount 3000 --savings_target 10000
 
 			- Description: 	Create a new moneybox	
 			- API:		POST: 	/api/moneybox

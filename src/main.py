@@ -83,10 +83,16 @@ def transfer_amount(
 
 @app.command("create")
 def create_moneybox(
-    name: Annotated[str, typer.Argument()],
+    name: Annotated[str, typer.Option()],
+    priority: Annotated[int, typer.Option()],
+    savings_amount: Annotated[int, typer.Option()] = 0,
+    savings_target: Annotated[Optional[int], typer.Option()] = None,
 ):
     consumer = PostMoneyboxApiConsumer(
-        new_moneybox_name=name,
+        name=name,
+        priority=priority,
+        savings_amount=savings_amount,
+        savings_target=savings_target,
     )
 
     print(consumer)
