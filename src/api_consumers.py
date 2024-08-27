@@ -5,8 +5,9 @@ import typer
 from rich import status
 
 from src.config import BASE_URL, PORT
-from src.custom_types import MoveDirection, Endpoint
+from src.custom_types import Endpoint, MoveDirection
 from src.utils import colorize_number, exit_with_error, tabulate_str
+
 
 class ApiConsumerFactory(ABC):
     """Base class for all API consumers."""
@@ -593,7 +594,9 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         self.user_email_address = user_email_address
         self.is_automated_saving_active = is_automated_saving_active
         self.savings_amount = savings_amount
-        self.overflow_moneybox_automated_savings_mode = overflow_moneybox_automated_savings_mode
+        self.overflow_moneybox_automated_savings_mode = (
+            overflow_moneybox_automated_savings_mode
+        )
 
         self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
 
@@ -606,13 +609,17 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             self.patch_data["user_email_address"] = self.user_email_address
 
         if self.is_automated_saving_active >= 0:
-            self.patch_data["is_automated_saving_active"] = self.is_automated_saving_active
+            self.patch_data["is_automated_saving_active"] = (
+                self.is_automated_saving_active
+            )
 
         if self.savings_amount >= 0:
             self.patch_data["savings_amount"] = self.savings_amount
 
         if self.overflow_moneybox_automated_savings_mode:
-            self.patch_data["overflow_moneybox_automated_savings_mode"] = self.overflow_moneybox_automated_savings_mode
+            self.patch_data["overflow_moneybox_automated_savings_mode"] = (
+                self.overflow_moneybox_automated_savings_mode
+            )
 
         self.response = requests.patch(self.url, json=self.patch_data)
 
@@ -633,7 +640,6 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         rows = [content.values()]
 
         return tabulate_str(headers=headers, rows=rows)
-
 
 
 class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
@@ -659,5 +665,9 @@ class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        content = "Ok. Test email sent" if self.response.status_code == 204 else "Failed sending test email."
+        content = (
+            "Ok. Test email sent"
+            if self.response.status_code == 204
+            else "Failed sending test email."
+        )
         return content

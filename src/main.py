@@ -3,16 +3,19 @@ from typing import Annotated, Optional
 import typer
 
 from src.api_consumers import (DeleteMoneyboxApiConsumer,
+                               GetAppSettingsApiConsumer,
                                GetMoneyboxApiConsumer,
                                GetMoneyboxesApiConsumer,
                                GetMoneyboxTransactionsApiConsumer,
-                               GetPriorityListApiConsumer, PatchMoneyboxApiConsumer,
+                               GetPriorityListApiConsumer,
+                               PatchAppSettingsApiConsumer,
+                               PatchMoneyboxApiConsumer,
+                               PatchSendTestEmailApiConsumer,
                                PostMoneyboxApiConsumer,
                                PostMoneyboxBalanceAddApiConsumer,
                                PostMoneyboxBalanceSubApiConsumer,
                                PostMoneyboxBalanceTransferApiConsumer,
-                               UpdatePriorityListApiConsumer, GetAppSettingsApiConsumer, PatchAppSettingsApiConsumer,
-                               PatchSendTestEmailApiConsumer)
+                               UpdatePriorityListApiConsumer)
 from src.custom_types import MoveDirection
 from src.utils import int_or_none
 
@@ -158,31 +161,33 @@ def update_pioritylist(
     )
     print(consumer)
 
+
 @app.command("get-appsettings")
 def get_appsettings():
     consumer = GetAppSettingsApiConsumer()
     print(consumer)
 
+
 @app.command("update-appsettings")
 def update_appsettings(
     is_automated_saving_active: Annotated[
-        Optional[int],
-        typer.Option(help="Activate automated savings.")
+        Optional[int], typer.Option(help="Activate automated savings.")
     ] = -1,
     overflow_moneybox_automated_savings_mode: Annotated[
         Optional[str],
-        typer.Option(help="The mode for the overflow moneybox, modes: 'collect', 'add', 'fill'")
+        typer.Option(
+            help="The mode for the overflow moneybox, modes: 'collect', 'add', 'fill'"
+        ),
     ] = "",
     savings_amount: Annotated[
         Optional[int], typer.Option(help="The amount for automated distribution.")
     ] = -1,
     send_reports_via_email: Annotated[
         Optional[int],
-        typer.Option(help="Enabled receiving emails after automated savings.")
+        typer.Option(help="Enabled receiving emails after automated savings."),
     ] = -1,
     user_email_address: Annotated[
-        Optional[str],
-        typer.Option(help="The receivers email for automated savings.")
+        Optional[str], typer.Option(help="The receivers email for automated savings.")
     ] = "",
 ):
     if overflow_moneybox_automated_savings_mode == "add":
@@ -205,6 +210,7 @@ def update_appsettings(
 def send_testemail():
     consumer = PatchSendTestEmailApiConsumer()
     print(consumer)
+
 
 if __name__ == "__main__":
     app()
