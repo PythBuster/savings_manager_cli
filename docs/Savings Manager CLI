@@ -28,7 +28,7 @@
 			myapp transfer (from-mb=)1 (to-mb=)2 (amount=)400 // Meaning: moneybox_id -> transfer -> 400 > moneybox_id
 
 			- Description: 	Transfer amount from moneybox_id to [moneybox_id]		
-			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/transfert
+			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/transfer
 			
 		
 		
@@ -41,7 +41,7 @@
 			
 	
 		CLI: CREATE MONEYBOX
-			myapp new --name holiday  	// Meaning: new -> monebox -> [data: name]
+			myapp new --name holiday  	// Meaning: new -> moneybox -> [data: name]
 
 			- Description: 	Create a new moneybox	
 			- API:		POST: 	/api/moneybox
@@ -81,3 +81,29 @@
 
 			- Description: 	Update prioritylist
 			- API:		PATCH: /api/prioritylist
+
+
+		CLI: GET APP SETTINGS
+			myapp get-appsettings
+
+			- Description: 	Get app settings
+			- API:		GET: /api/settings
+
+
+		CLI: UPDATE APP SETTINGS
+			myapp update-appsettings
+			    --is_automated_saving_active=1|0
+                --overflow_moneybox_automated_savings_mode=collect|add|fill,
+                --savings_amount=60000
+                --send_reports_via_email=1|0,
+                --user_email_address=pythbuster@gmail.com
+
+			- Description: 	Update app settings
+			- API:		PATCH: /api/settings
+
+
+		CLI: SEND TEST MAIL
+			myapp send-testemail
+
+			- Description: 	Send a testmail by using the SMTP outgoing server data to receiver set in app settings
+			- API:		PATCH: /api/email/send-testemail

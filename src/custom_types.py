@@ -41,3 +41,12 @@ class Endpoint(StrEnum):
 
     UPDATE_PRIORITYLIST = "/api/prioritylist"
     """UPDATE Endpoint for update prioritylist."""
+
+    GET_APPSETTINGS = "/api/settings"
+    """GET Endpoint for get app settings."""
+
+    UPDATE_APPSETTINGS = "/api/settings"
+    """UPDATE Endpoint for get app settings."""
+
+    SEND_TESTEMAIL = "/api/email/send-testemail"
+    """Send Testemail Endpoint."""

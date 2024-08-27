@@ -2,6 +2,7 @@ from abc import ABC
 
 import requests
 import typer
+from rich import status
 
 from src.config import BASE_URL, PORT
 from src.custom_types import MoveDirection, Endpoint
@@ -301,7 +302,7 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         # if self.new_priority >= 0:
         self.patch_data["priority"] = self.new_priority
 
-        if len(self.new_name) > 0:
+        if self.new_name:
             self.patch_data["name"] = self.new_name
 
         if self.new_savings_amount >= 0:
@@ -419,7 +420,7 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
         return f"Deleted moneybox ({self.moneybox_id})."
 
 
-class GetPriorityList(ApiConsumerFactory):
+class GetPriorityListApiConsumer(ApiConsumerFactory):
     """`GET: /api/prioritylist` consumer class."""
 
     def __init__(self):
@@ -451,7 +452,7 @@ class GetPriorityList(ApiConsumerFactory):
         return tabulate_str(headers=headers, rows=rows)
 
 
-class UpdatePriorityList(ApiConsumerFactory):
+class UpdatePriorityListApiConsumer(ApiConsumerFactory):
     """`PATCH: /api/prioritylist` consumer class."""
 
     def __init__(
@@ -482,7 +483,7 @@ class UpdatePriorityList(ApiConsumerFactory):
         :rtype: :class:`dict[str, list[dict[str, int|str]]]`
         """
 
-        consumer = GetPriorityList()
+        consumer = GetPriorityListApiConsumer()
         priority_list = consumer.response.json()["priority_list"]
 
         # move logic
@@ -539,3 +540,124 @@ class UpdatePriorityList(ApiConsumerFactory):
         rows = [list(priority.values()) for priority in content]
 
         return tabulate_str(headers=headers, rows=rows)
+
+
+class GetAppSettingsApiConsumer(ApiConsumerFactory):
+    """`GET: /api/settings` consumer class."""
+
+    def __init__(self):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.GET_APPSETTINGS,
+        )
+
+        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
+        self.response = requests.get(self.url)
+
+    def __str__(self) -> str:
+        """Parse the response of `GET: /api/settings`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        if not self.response:
+            exit_with_error(content=self.response.json())
+
+        content = self.response.json()
+
+        headers = content.keys()
+        rows = [content.values()]
+        return tabulate_str(headers=headers, rows=rows)
+
+
+class PatchAppSettingsApiConsumer(ApiConsumerFactory):
+    """`PATCH:  /api/settings` consumer class."""
+
+    def __init__(
+        self,
+        send_reports_via_email: int,
+        user_email_address: str,
+        is_automated_saving_active: int,
+        savings_amount: int,
+        overflow_moneybox_automated_savings_mode: str,
+    ):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.UPDATE_APPSETTINGS,
+        )
+        self.send_reports_via_email = send_reports_via_email
+        self.user_email_address = user_email_address
+        self.is_automated_saving_active = is_automated_saving_active
+        self.savings_amount = savings_amount
+        self.overflow_moneybox_automated_savings_mode = overflow_moneybox_automated_savings_mode
+
+        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
+
+        self.patch_data = {}
+
+        if self.send_reports_via_email >= 0:
+            self.patch_data["savings_amount"] = self.savings_amount
+
+        if self.user_email_address:
+            self.patch_data["user_email_address"] = self.user_email_address
+
+        if self.is_automated_saving_active >= 0:
+            self.patch_data["is_automated_saving_active"] = self.is_automated_saving_active
+
+        if self.savings_amount >= 0:
+            self.patch_data["savings_amount"] = self.savings_amount
+
+        if self.overflow_moneybox_automated_savings_mode:
+            self.patch_data["overflow_moneybox_automated_savings_mode"] = self.overflow_moneybox_automated_savings_mode
+
+        self.response = requests.patch(self.url, json=self.patch_data)
+
+    def __str__(self) -> str:
+        """Parse the response of `PATCH:  /api/settings`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        if not self.response:
+            exit_with_error(content=self.response.json())
+
+        content = self.response.json()
+
+        headers = content.keys()
+        rows = [content.values()]
+
+        return tabulate_str(headers=headers, rows=rows)
+
+
+
+class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
+    """`PATCH:  /api/email/send-testemail` consumer class."""
+
+    def __init__(
+        self,
+    ):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.SEND_TESTEMAIL,
+        )
+
+        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
+        self.response = requests.patch(self.url)
+
+    def __str__(self) -> str:
+        """Parse the response of `PATCH:  /api/email/send-testemail`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        content = "Ok. Test email sent" if self.response.status_code == 204 else "Failed sending test email."
+        return content
