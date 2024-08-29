@@ -8,8 +8,8 @@ import requests
 import typer
 from requests import Response
 
-from src.custom_types import Endpoint, MoveDirection
-from src.utils import colorize_number, exit_with_error, tabulate_str
+from savings_manager_cli.custom_types import Endpoint, MoveDirection
+from savings_manager_cli.utils import colorize_number, exit_with_error, tabulate_str
 
 BASE_URL = "http://localhost"
 PORT = 8001

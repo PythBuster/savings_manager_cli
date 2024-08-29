@@ -2,22 +2,22 @@ from typing import Annotated, Optional
 
 import typer
 
-from src.api_consumers import (DeleteMoneyboxApiConsumer,
-                               GetAppSettingsApiConsumer,
-                               GetMoneyboxApiConsumer,
-                               GetMoneyboxesApiConsumer,
-                               GetMoneyboxTransactionsApiConsumer,
-                               GetPriorityListApiConsumer,
-                               PatchAppSettingsApiConsumer,
-                               PatchMoneyboxApiConsumer,
-                               PatchSendTestEmailApiConsumer,
-                               PostMoneyboxApiConsumer,
-                               PostMoneyboxBalanceAddApiConsumer,
-                               PostMoneyboxBalanceSubApiConsumer,
-                               PostMoneyboxBalanceTransferApiConsumer,
-                               UpdatePriorityListApiConsumer)
-from src.custom_types import MoveDirection
-from src.utils import int_or_none
+from savings_manager_cli.api_consumers import (DeleteMoneyboxApiConsumer,
+                                               GetAppSettingsApiConsumer,
+                                               GetMoneyboxApiConsumer,
+                                               GetMoneyboxesApiConsumer,
+                                               GetMoneyboxTransactionsApiConsumer,
+                                               GetPriorityListApiConsumer,
+                                               PatchAppSettingsApiConsumer,
+                                               PatchMoneyboxApiConsumer,
+                                               PatchSendTestEmailApiConsumer,
+                                               PostMoneyboxApiConsumer,
+                                               PostMoneyboxBalanceAddApiConsumer,
+                                               PostMoneyboxBalanceSubApiConsumer,
+                                               PostMoneyboxBalanceTransferApiConsumer,
+                                               UpdatePriorityListApiConsumer)
+from savings_manager_cli.custom_types import MoveDirection
+from savings_manager_cli.utils import int_or_none
 
 app = typer.Typer()
 
