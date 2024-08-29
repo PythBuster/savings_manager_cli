@@ -1,10 +1,10 @@
 import asyncio
 from abc import ABC
-from typing import Callable, Any
+from functools import partial
+from typing import Any, Callable
 
 import requests
 import typer
-from black.linegen import partial
 from requests import Response
 
 from src.config import BASE_URL, PORT
@@ -36,7 +36,9 @@ class ApiConsumerFactory(ABC):
             elif isinstance(request_data, dict):
                 self.request_data = request_data
             else:
-                raise TypeError("Error in Request: request_data must be callable or dict.")
+                raise TypeError(
+                    "Error in Request: request_data must be callable or dict."
+                )
 
         self.consumer_request = (
             partial(request, url=self.url)
@@ -272,6 +274,7 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
             exit_with_error(content=self.response.json())
 
         return f"Transferred '{self.amount/100:.2f} €' from moneybox ({self.from_moneybox_id}) to moneybox ({self.to_moneybox_id})"
+
 
 class PostMoneyboxApiConsumer(ApiConsumerFactory):
     """`POST:  /api/moneybox` consumer class."""
@@ -642,9 +645,7 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             patch_data["user_email_address"] = self.user_email_address
 
         if self.is_automated_saving_active >= 0:
-            patch_data["is_automated_saving_active"] = (
-                self.is_automated_saving_active
-            )
+            patch_data["is_automated_saving_active"] = self.is_automated_saving_active
 
         if self.savings_amount >= 0:
             patch_data["savings_amount"] = self.savings_amount
