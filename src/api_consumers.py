@@ -538,8 +538,8 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         :rtype: :class:`dict[str, list[dict[str, int|str]]]`
         """
 
-        response = GetPriorityListApiConsumer().run()
-        priority_list = response.json()["priority_list"]
+        with GetPriorityListApiConsumer() as consumer:
+            priority_list = consumer.response.json()["priority_list"]
 
         # move logic
         priority_sorted_list = sorted(
