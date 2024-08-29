@@ -2,16 +2,17 @@ import asyncio
 import http
 from abc import ABC
 from functools import partial
-from http.client import responses
 from typing import Any, Callable
 
 import requests
 import typer
 from requests import Response
 
-from src.config import BASE_URL, PORT
 from src.custom_types import Endpoint, MoveDirection
 from src.utils import colorize_number, exit_with_error, tabulate_str
+
+BASE_URL = "http://localhost"
+PORT = 8001
 
 
 class ApiConsumerFactory(ABC):
@@ -376,7 +377,9 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         clear_savings_target: bool,
     ):
         if clear_savings_target and savings_target >= 0:
-            raise typer.BadParameter("You can't set savings target and clear it at same time.")
+            raise typer.BadParameter(
+                "You can't set savings target and clear it at same time."
+            )
 
         self.moneybox_id = moneybox_id
         self.new_name = name
@@ -709,7 +712,9 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             patch_data["user_email_address"] = self.user_email_address
 
         if self.is_automated_saving_active >= 0:
-            patch_data["is_automated_saving_active"] = bool(self.is_automated_saving_active)
+            patch_data["is_automated_saving_active"] = bool(
+                self.is_automated_saving_active
+            )
 
         if self.savings_amount >= 0:
             patch_data["savings_amount"] = self.savings_amount
