@@ -2,4 +2,4 @@
 This is the cli tool for the Savings Manager.
 
 ## Compatibility
-Works with Savings Manager **>= v2.2.1**.
+Works with Savings Manager **>= v2.3.0**.

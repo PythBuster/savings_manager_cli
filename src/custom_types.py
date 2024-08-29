@@ -12,7 +12,7 @@ class Endpoint(StrEnum):
     LIST_ALL_MONEYBOXES = "/api/moneyboxes"
     """GET Endpoint for list all moneyboxes."""
 
-    LIST_SPECIFIC_MONEYBOX = "/api/moneybox"
+    LIST_SPECIFIC_MONEYBOX = "/api/moneybox/{moneybox_id}"
     """GET Endpoint for list specific moneybox."""
 
     ADD_AMOUNT_TO_MONEYBOX = "/api/moneybox/{moneybox_id}/balance/add"

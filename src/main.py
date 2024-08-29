@@ -26,7 +26,6 @@ app = typer.Typer()
 def list_specific_or_all_moneyboxes(
     moneybox_id: Annotated[Optional[int], typer.Argument()] = None,
 ):
-
     if moneybox_id is None:
         consumer = GetMoneyboxesApiConsumer()
     else:
@@ -83,13 +82,11 @@ def transfer_amount(
 @app.command("create")
 def create_moneybox(
     name: Annotated[str, typer.Option()],
-    priority: Annotated[int, typer.Option()],
     savings_amount: Annotated[int, typer.Option()] = 0,
     savings_target: Annotated[Optional[int], typer.Option()] = None,
 ):
     with PostMoneyboxApiConsumer(
         name=name,
-        priority=priority,
         savings_amount=savings_amount,
         savings_target=savings_target,
     ) as consumer:
@@ -99,17 +96,17 @@ def create_moneybox(
 @app.command("update")
 def update_moneybox(
     moneybox_id: Annotated[int, typer.Argument()],
-    priority: Annotated[int, typer.Option()] = -1,
-    name: Annotated[Optional[str], typer.Option()] = "",
-    savings_amount: Annotated[Optional[int], typer.Option()] = -1,
-    savings_target: Annotated[Optional[int], typer.Option(parser=int_or_none)] = -1,
+    name: Annotated[str, typer.Option()] = "",
+    savings_amount: Annotated[int, typer.Option()] = -1,
+    savings_target: Annotated[Optional[int], typer.Option()] = -1,
+    clear_savings_target: Annotated[Optional[bool], typer.Option()] = False,
 ):
     with PatchMoneyboxApiConsumer(
         moneybox_id=moneybox_id,
-        priority=priority,
         name=name,
         savings_amount=savings_amount,
         savings_target=savings_target,
+        clear_savings_target=clear_savings_target,
     ) as consumer:
         print(consumer)
 

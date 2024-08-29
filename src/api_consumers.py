@@ -2,6 +2,7 @@ import asyncio
 import http
 from abc import ABC
 from functools import partial
+from http.client import responses
 from typing import Any, Callable
 
 import requests
@@ -36,8 +37,6 @@ class ApiConsumerFactory(ABC):
         self.endpoint = endpoint
         self.response = None
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-
         if request_data is not None:
             if callable(request_data):
                 self.request_data = request_data()
@@ -49,11 +48,16 @@ class ApiConsumerFactory(ABC):
                 )
 
         request_callback = ApiConsumerFactory.request_method_callbacks[request_method]
+
         self.consumer_request = (
             partial(request_callback, url=self.url)
             if request_data is None
-            else partial(request_callback, url=self.url, data=self.request_data)
+            else partial(request_callback, url=self.url, json=self.request_data)
         )
+
+    @property
+    def url(self):
+        raise NotImplementedError()
 
     def __enter__(self):
         self.run()
@@ -88,15 +92,24 @@ class ApiConsumerFactory(ABC):
 class GetMoneyboxApiConsumer(ApiConsumerFactory):
     """`GET: /api/moneybox/{moneybox_id}` consumer class."""
 
-    def __init__(self, moneybox_id: int):
+    def __init__(self, moneybox_id: int | None):
         self.moneybox_id = moneybox_id
 
+        endpoint = (
+            Endpoint.LIST_ALL_MONEYBOXES
+            if moneybox_id is None
+            else Endpoint.LIST_SPECIFIC_MONEYBOX
+        )
         super().__init__(
             domain=BASE_URL,
             port=PORT,
-            endpoint=Endpoint.LIST_SPECIFIC_MONEYBOX,
+            endpoint=endpoint,
             request_method=http.HTTPMethod.GET,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/moneybox/{moneybox_id}`
@@ -127,6 +140,10 @@ class GetMoneyboxesApiConsumer(ApiConsumerFactory):
             endpoint=Endpoint.LIST_ALL_MONEYBOXES,
             request_method=http.HTTPMethod.GET,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/moneyboxes`
@@ -181,6 +198,10 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
             request_data=post_data,
         )
 
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
+
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox/{moneybox_id}/balance/add`
         to a console represented string and returns it.
@@ -222,6 +243,10 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
 
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox/{moneybox_id}/balance/sub`
@@ -271,6 +296,10 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
             request_data=post_data,
         )
 
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.from_moneybox_id))}"
+
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox/{moneybox_id}/balance/sub`
         to a console represented string and returns it.
@@ -291,18 +320,15 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
     def __init__(
         self,
         name: str,
-        priority: int,
         savings_amount: int = 0,
         savings_target: int | None = None,
     ):
         self.name = name
-        self.priority = priority
         self.savings_amount = savings_amount
         self.savings_target = savings_target
 
         post_data = {
             "name": self.name,
-            "priority": self.priority,
             "savings_amount": self.savings_amount,
             "savings_target": self.savings_target,
         }
@@ -314,6 +340,10 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
 
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox`
@@ -340,23 +370,21 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
     def __init__(
         self,
         moneybox_id: int,
-        priority: int,
         name: str,
         savings_amount: int,
-        savings_target: int | None,
+        savings_target: int,
+        clear_savings_target: bool,
     ):
+        if clear_savings_target and savings_target >= 0:
+            raise typer.BadParameter("You can't set savings target and clear it at same time.")
+
         self.moneybox_id = moneybox_id
-        self.new_priority = priority
         self.new_name = name
         self.new_savings_amount = savings_amount
         self.new_savings_target = savings_target
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
+        self.clear_savings_target = clear_savings_target
 
         patch_data = {}
-
-        # if self.new_priority >= 0:
-        patch_data["priority"] = self.new_priority
 
         if self.new_name:
             patch_data["name"] = self.new_name
@@ -364,8 +392,11 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         if self.new_savings_amount >= 0:
             patch_data["savings_amount"] = self.new_savings_amount
 
-        if self.new_savings_target is None or self.new_savings_target >= 0:
+        if self.new_savings_target >= 0:
             patch_data["savings_target"] = self.new_savings_target
+
+        if clear_savings_target:
+            patch_data["savings_target"] = None
 
         super().__init__(
             domain=BASE_URL,
@@ -374,6 +405,10 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
 
     def __str__(self) -> str:
         """Parse the response of `PATCH:  /api/moneybox/{moneybox_id}`
@@ -411,6 +446,10 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
             endpoint=Endpoint.SHOW_MONEYBOX_LOGS,
             request_method=http.HTTPMethod.GET,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
 
     def __str__(self) -> str:
         """Parse the response of `GET: 	/api/moneybox/{moneybox_id}/transactions`
@@ -466,6 +505,10 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.DELETE,
         )
 
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
+
     def __str__(self) -> str:
         """Parse the response of `DELETE:  /api/moneybox/{moneybox_id}`
         to a console represented string and returns it.
@@ -490,6 +533,10 @@ class GetPriorityListApiConsumer(ApiConsumerFactory):
             endpoint=Endpoint.GET_PRIORITYLIST,
             request_method=http.HTTPMethod.GET,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/prioritylist`
@@ -530,6 +577,10 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.PATCH,
             request_data=self._build_patch_data,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
 
     def _build_patch_data(self) -> dict[str, list[dict[str, int | str]]]:
         """Build the new priority list dict data.
@@ -608,6 +659,10 @@ class GetAppSettingsApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.GET,
         )
 
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
+
     def __str__(self) -> str:
         """Parse the response of `GET: /api/settings`
         to a console represented string and returns it.
@@ -648,13 +703,13 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         patch_data = {}
 
         if self.send_reports_via_email >= 0:
-            patch_data["savings_amount"] = self.savings_amount
+            patch_data["send_reports_via_email"] = bool(self.send_reports_via_email)
 
         if self.user_email_address:
             patch_data["user_email_address"] = self.user_email_address
 
         if self.is_automated_saving_active >= 0:
-            patch_data["is_automated_saving_active"] = self.is_automated_saving_active
+            patch_data["is_automated_saving_active"] = bool(self.is_automated_saving_active)
 
         if self.savings_amount >= 0:
             patch_data["savings_amount"] = self.savings_amount
@@ -671,6 +726,10 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
 
     def __str__(self) -> str:
         """Parse the response of `PATCH:  /api/settings`
@@ -703,6 +762,10 @@ class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
             endpoint=Endpoint.SEND_TESTEMAIL,
             request_method=http.HTTPMethod.PATCH,
         )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
 
     def __str__(self) -> str:
         """Parse the response of `PATCH:  /api/email/send-testemail`

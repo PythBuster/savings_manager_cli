@@ -1,13 +1,12 @@
 - Each CLI function will produce an output
 
-
 		CLI: LIST ALL
 			myapp list
 
 			- Description: 	List all moneyboxes 			
 			- API:		GET:	/api/moneyboxes
 			- Example output:
-			
+
 	
 		CLI: ADD AMOUNT
 			myapp add 1 400  	// Meaning: moneybox_id -> add -> 400
@@ -23,32 +22,29 @@
 			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/sub
 
 
-
 		CLI: TRANSFER AMOUNT
 			myapp transfer (from-mb=)1 (to-mb=)2 (amount=)400 // Meaning: moneybox_id -> transfer -> 400 > moneybox_id
 
 			- Description: 	Transfer amount from moneybox_id to [moneybox_id]		
 			- API:		POST: 	/api/moneybox/{moneybox_id}/balance/transfer
 			
-		
-		
+
 		CLI: VIEW LOGS
 			myapp logs 1 [-n 40]  		// Meaning: moneybox_id -> logs
 
 			- Description: 	View [last n] logs of moneybox_id	
 			- API:		GET: 	/api/moneybox/{moneybox_id}/transactions
 			
-			
-	
+
 		CLI: CREATE MONEYBOX
-			myapp new --name holiday --priority 4 --savings_amount 3000 --savings_target 10000
+			myapp create --name holiday --priority 4 --savings_amount 3000 --savings_target 10000
 
 			- Description: 	Create a new moneybox	
 			- API:		POST: 	/api/moneybox
 			
 	
 		CLI: UPDATE MONEYBOX
-			myapp update 1 --name holiday  // Meaning: moneybox_id -> update -> [data: name]
+			myapp update 1 --name holiday --savings_amount 3000 --savings_target 10000 | --clear_savings_target
 
 			- Description: 	Update specific moneybox
 			- API:		PATCH: 	/api/moneybox
@@ -77,7 +73,7 @@
 
 
 		CLI: UPDATE PRIORITYLIST
-			myapp update-prioritylist --mb 1 --up|down [N]  // N i optional, default=1
+			myapp update-prioritylist (--moneybox_id)1 (--direction)up|down (--N)N  // N i optional, default=1
 
 			- Description: 	Update prioritylist
 			- API:		PATCH: /api/prioritylist
