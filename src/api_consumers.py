@@ -1,4 +1,5 @@
 import asyncio
+import http
 from abc import ABC
 from functools import partial
 from typing import Any, Callable
@@ -15,12 +16,19 @@ from src.utils import colorize_number, exit_with_error, tabulate_str
 class ApiConsumerFactory(ABC):
     """Base class for all API consumers."""
 
+    request_method_callbacks = {
+        http.HTTPMethod.GET: requests.get,
+        http.HTTPMethod.PATCH: requests.patch,
+        http.HTTPMethod.POST: requests.post,
+        http.HTTPMethod.DELETE: requests.delete,
+    }
+
     def __init__(
         self,
         domain: str,
         port: int,
         endpoint: Endpoint,
-        request: Callable,
+        request_method: http.HTTPMethod,
         request_data: dict[str, Any] | Callable | None = None,
     ):
         self.domain = domain
@@ -40,10 +48,11 @@ class ApiConsumerFactory(ABC):
                     "Error in Request: request_data must be callable or dict."
                 )
 
+        request_callback = ApiConsumerFactory.request_method_callbacks[request_method]
         self.consumer_request = (
-            partial(request, url=self.url)
+            partial(request_callback, url=self.url)
             if request_data is None
-            else partial(request, url=self.url, data=self.request_data)
+            else partial(request_callback, url=self.url, data=self.request_data)
         )
 
     def __enter__(self):
@@ -86,7 +95,7 @@ class GetMoneyboxApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.LIST_SPECIFIC_MONEYBOX,
-            request=requests.get,
+            request_method=http.HTTPMethod.GET,
         )
 
     def __str__(self) -> str:
@@ -116,7 +125,7 @@ class GetMoneyboxesApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.LIST_ALL_MONEYBOXES,
-            request=requests.get,
+            request_method=http.HTTPMethod.GET,
         )
 
     def __str__(self) -> str:
@@ -168,7 +177,7 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.ADD_AMOUNT_TO_MONEYBOX,
-            request=requests.post,
+            request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
 
@@ -210,7 +219,7 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SUB_AMOUNT_TO_MONEYBOX,
-            request=requests.post,
+            request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
 
@@ -258,7 +267,7 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.TRANSFER_AMOUNT,
-            request=requests.post,
+            request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
 
@@ -302,7 +311,7 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.CREATE_MONEYBOX,
-            request=requests.post,
+            request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
 
@@ -362,7 +371,7 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.UPDATE_MONEYBOX,
-            request=requests.patch,
+            request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
         )
 
@@ -400,7 +409,7 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SHOW_MONEYBOX_LOGS,
-            request=requests.get,
+            request_method=http.HTTPMethod.GET,
         )
 
     def __str__(self) -> str:
@@ -454,7 +463,7 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.DELETE_MONEYBOX,
-            request=requests.delete,
+            request_method=http.HTTPMethod.DELETE,
         )
 
     def __str__(self) -> str:
@@ -479,7 +488,7 @@ class GetPriorityListApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.GET_PRIORITYLIST,
-            request=requests.get,
+            request_method=http.HTTPMethod.GET,
         )
 
     def __str__(self) -> str:
@@ -518,7 +527,7 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.UPDATE_PRIORITYLIST,
-            request=requests.patch,
+            request_method=http.HTTPMethod.PATCH,
             request_data=self._build_patch_data,
         )
 
@@ -596,7 +605,7 @@ class GetAppSettingsApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.GET_APPSETTINGS,
-            request=requests.get,
+            request_method=http.HTTPMethod.GET,
         )
 
     def __str__(self) -> str:
@@ -659,7 +668,7 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.UPDATE_APPSETTINGS,
-            request=requests.patch,
+            request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
         )
 
@@ -692,7 +701,7 @@ class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SEND_TESTEMAIL,
-            request=requests.patch,
+            request_method=http.HTTPMethod.PATCH,
         )
 
     def __str__(self) -> str:

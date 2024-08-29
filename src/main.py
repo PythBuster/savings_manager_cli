@@ -1,24 +1,21 @@
-import asyncio
 from typing import Annotated, Optional
 
 import typer
 
-from src.api_consumers import (
-    DeleteMoneyboxApiConsumer,
-    GetAppSettingsApiConsumer,
-    GetMoneyboxApiConsumer,
-    GetMoneyboxesApiConsumer,
-    GetMoneyboxTransactionsApiConsumer,
-    GetPriorityListApiConsumer,
-    PatchAppSettingsApiConsumer,
-    PatchMoneyboxApiConsumer,
-    PatchSendTestEmailApiConsumer,
-    PostMoneyboxApiConsumer,
-    PostMoneyboxBalanceAddApiConsumer,
-    PostMoneyboxBalanceSubApiConsumer,
-    PostMoneyboxBalanceTransferApiConsumer,
-    UpdatePriorityListApiConsumer,
-)
+from src.api_consumers import (DeleteMoneyboxApiConsumer,
+                               GetAppSettingsApiConsumer,
+                               GetMoneyboxApiConsumer,
+                               GetMoneyboxesApiConsumer,
+                               GetMoneyboxTransactionsApiConsumer,
+                               GetPriorityListApiConsumer,
+                               PatchAppSettingsApiConsumer,
+                               PatchMoneyboxApiConsumer,
+                               PatchSendTestEmailApiConsumer,
+                               PostMoneyboxApiConsumer,
+                               PostMoneyboxBalanceAddApiConsumer,
+                               PostMoneyboxBalanceSubApiConsumer,
+                               PostMoneyboxBalanceTransferApiConsumer,
+                               UpdatePriorityListApiConsumer)
 from src.custom_types import MoveDirection
 from src.utils import int_or_none
 
