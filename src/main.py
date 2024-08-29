@@ -1,6 +1,8 @@
+import asyncio
 from typing import Annotated, Optional
 
 import typer
+from pydantic import with_config
 
 from src.api_consumers import (DeleteMoneyboxApiConsumer,
                                GetAppSettingsApiConsumer,
@@ -26,13 +28,14 @@ app = typer.Typer()
 def list_specific_or_all_moneyboxes(
     moneybox_id: Annotated[Optional[int], typer.Argument()] = None,
 ):
+
     if moneybox_id is None:
         consumer = GetMoneyboxesApiConsumer()
     else:
         consumer = GetMoneyboxApiConsumer(moneybox_id=moneybox_id)
 
-    print(consumer)
-
+    with consumer:
+        print(consumer)
 
 @app.command("add")
 def add_amount_to_specific_moneybox(
@@ -40,14 +43,12 @@ def add_amount_to_specific_moneybox(
     amount: Annotated[int, typer.Argument(min=1)],
     description: Annotated[str, typer.Argument()] = "",
 ):
-    consumer = PostMoneyboxBalanceAddApiConsumer(
+    with PostMoneyboxBalanceAddApiConsumer(
         moneybox_id=moneybox_id,
         amount=amount,
         description=description,
-    )
-
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("sub")
 def sub_amount_to_specific_moneybox(
@@ -55,14 +56,12 @@ def sub_amount_to_specific_moneybox(
     amount: Annotated[int, typer.Argument(min=1)],
     description: Annotated[str, typer.Argument()] = "",
 ):
-    consumer = PostMoneyboxBalanceSubApiConsumer(
+    with PostMoneyboxBalanceSubApiConsumer(
         moneybox_id=moneybox_id,
         amount=amount,
         description=description,
-    )
-
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("transfer")
 def transfer_amount(
@@ -71,15 +70,13 @@ def transfer_amount(
     amount: Annotated[int, typer.Argument(min=1)],
     description: Annotated[str, typer.Argument()] = "",
 ):
-    consumer = PostMoneyboxBalanceTransferApiConsumer(
+    with PostMoneyboxBalanceTransferApiConsumer(
         from_moneybox_id=from_moneybox_id,
         to_moneybox_id=to_moneybox_id,
         amount=amount,
         description=description,
-    )
-
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("create")
 def create_moneybox(
@@ -88,15 +85,13 @@ def create_moneybox(
     savings_amount: Annotated[int, typer.Option()] = 0,
     savings_target: Annotated[Optional[int], typer.Option()] = None,
 ):
-    consumer = PostMoneyboxApiConsumer(
+    with PostMoneyboxApiConsumer(
         name=name,
         priority=priority,
         savings_amount=savings_amount,
         savings_target=savings_target,
-    )
-
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("update")
 def update_moneybox(
@@ -106,24 +101,21 @@ def update_moneybox(
     savings_amount: Annotated[Optional[int], typer.Option()] = -1,
     savings_target: Annotated[Optional[int], typer.Option(parser=int_or_none)] = -1,
 ):
-    consumer = PatchMoneyboxApiConsumer(
+    with PatchMoneyboxApiConsumer(
         moneybox_id=moneybox_id,
         priority=priority,
         name=name,
         savings_amount=savings_amount,
         savings_target=savings_target,
-    )
-
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("delete")
 def delete_moneybox(
     moneybox_id: Annotated[int, typer.Argument()],
 ):
-    consumer = DeleteMoneyboxApiConsumer(moneybox_id=moneybox_id)
-
-    print(consumer)
+    with DeleteMoneyboxApiConsumer(moneybox_id=moneybox_id) as consumer:
+        print(consumer)
 
 
 @app.command("logs")
@@ -131,19 +123,16 @@ def show_logs(
     moneybox_id: Annotated[int, typer.Argument()],
     n: Annotated[Optional[int], typer.Option()] = None,
 ):
-    consumer = GetMoneyboxTransactionsApiConsumer(
+    with GetMoneyboxTransactionsApiConsumer(
         moneybox_id=moneybox_id,
         n=n,
-    )
-
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("get-prioritylist")
 def get_pioritylist():
-    consumer = GetPriorityListApiConsumer()
-    print(consumer)
-
+    with GetPriorityListApiConsumer() as consumer:
+        print(consumer)
 
 @app.command("update-prioritylist")
 def update_pioritylist(
@@ -160,19 +149,17 @@ def update_pioritylist(
     except:
         raise typer.BadParameter(f"{direction} unknown move direction.")
 
-    consumer = UpdatePriorityListApiConsumer(
+    with UpdatePriorityListApiConsumer(
         moneybox_id=moneybox_id,
         move_direction=move_direction,
         move_steps=n,
-    )
-    print(consumer)
-
+    ) as consumer:
+        print(consumer)
 
 @app.command("get-appsettings")
 def get_appsettings():
-    consumer = GetAppSettingsApiConsumer()
-    print(consumer)
-
+    with GetAppSettingsApiConsumer() as consumer:
+        print(consumer)
 
 @app.command("update-appsettings")
 def update_appsettings(
@@ -201,22 +188,24 @@ def update_appsettings(
     elif overflow_moneybox_automated_savings_mode == "fill":
         overflow_moneybox_automated_savings_mode = "fill_up_limited_moneyboxes"
 
-    consumer = PatchAppSettingsApiConsumer(
+    with PatchAppSettingsApiConsumer(
         send_reports_via_email=send_reports_via_email,
         user_email_address=user_email_address,
         is_automated_saving_active=is_automated_saving_active,
         savings_amount=savings_amount,
         overflow_moneybox_automated_savings_mode=overflow_moneybox_automated_savings_mode,
-    )
-
-    print(consumer)
+    ) as consumer:
+        print(consumer)
 
 
 @app.command("send-testemail")
 def send_testemail():
-    consumer = PatchSendTestEmailApiConsumer()
-    print(consumer)
+    with PatchSendTestEmailApiConsumer() as consumer:
+        print(consumer)
 
+async def async_main():
+    async with GetMoneyboxesApiConsumer() as consumer:
+        print(consumer)
 
 if __name__ == "__main__":
     app()

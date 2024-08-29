@@ -1,8 +1,11 @@
+import asyncio
 from abc import ABC
+from typing import Callable, Any
 
 import requests
 import typer
-from rich import status
+from black.linegen import partial
+from requests import Response
 
 from src.config import BASE_URL, PORT
 from src.custom_types import Endpoint, MoveDirection
@@ -17,28 +20,72 @@ class ApiConsumerFactory(ABC):
         domain: str,
         port: int,
         endpoint: Endpoint,
+        request: Callable,
+        request_data: dict[str, Any] | Callable | None = None,
     ):
         self.domain = domain
         self.port = port
         self.endpoint = endpoint
+        self.response = None
+
+        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
+
+        if request_data is not None:
+            if callable(request_data):
+                self.request_data = request_data()
+            elif isinstance(request_data, dict):
+                self.request_data = request_data
+            else:
+                raise TypeError("Error in Request: request_data must be callable or dict.")
+
+        self.consumer_request = (
+            partial(request, url=self.url)
+            if request_data is None
+            else partial(request, url=self.url, data=self.request_data)
+        )
+
+    def __enter__(self):
+        self.run()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    async def __aenter__(self):
+        await self.async_run()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def run(self) -> Response:
+        self.response = self.consumer_request()
+        return self.response
+
+    async def async_run(self) -> Response:
+        loop = asyncio.get_event_loop()
+        self.response = await loop.run_in_executor(
+            None,
+            self.consumer_request,
+        )
+        return self.response
 
     def __str__(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class GetMoneyboxApiConsumer(ApiConsumerFactory):
     """`GET: /api/moneybox/{moneybox_id}` consumer class."""
 
     def __init__(self, moneybox_id: int):
+        self.moneybox_id = moneybox_id
+
         super().__init__(
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.LIST_SPECIFIC_MONEYBOX,
+            request=requests.get,
         )
-        self.moneybox_id = moneybox_id
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}/{self.moneybox_id}"
-        self.response = requests.get(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/moneybox/{moneybox_id}`
@@ -67,10 +114,8 @@ class GetMoneyboxesApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.LIST_ALL_MONEYBOXES,
+            request=requests.get,
         )
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-        self.response = requests.get(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/moneyboxes`
@@ -111,18 +156,19 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.ADD_AMOUNT_TO_MONEYBOX,
-        )
         self.moneybox_id = moneybox_id
         self.amount = amount
         self.description = description
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
-        self.post_data = {"amount": amount, "description": description}
-        self.response = requests.post(self.url, json=self.post_data)
+        post_data = {"amount": amount, "description": description}
+
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.ADD_AMOUNT_TO_MONEYBOX,
+            request=requests.post,
+            request_data=post_data,
+        )
 
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox/{moneybox_id}/balance/add`
@@ -152,18 +198,19 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.SUB_AMOUNT_TO_MONEYBOX,
-        )
         self.moneybox_id = moneybox_id
         self.amount = amount
         self.description = description
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
-        self.post_data = {"amount": amount, "description": description}
-        self.response = requests.post(self.url, json=self.post_data)
+        post_data = {"amount": amount, "description": description}
+
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.SUB_AMOUNT_TO_MONEYBOX,
+            request=requests.post,
+            request_data=post_data,
+        )
 
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox/{moneybox_id}/balance/sub`
@@ -194,23 +241,24 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.TRANSFER_AMOUNT,
-        )
         self.from_moneybox_id = from_moneybox_id
         self.to_moneybox_id = to_moneybox_id
         self.amount = amount
         self.description = description
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.from_moneybox_id))}"
-        self.post_data = {
+        post_data = {
             "amount": amount,
             "to_moneybox_id": to_moneybox_id,
             "description": description,
         }
-        self.response = requests.post(self.url, json=self.post_data)
+
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.TRANSFER_AMOUNT,
+            request=requests.post,
+            request_data=post_data,
+        )
 
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox/{moneybox_id}/balance/sub`
@@ -225,7 +273,6 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
 
         return f"Transferred '{self.amount/100:.2f} €' from moneybox ({self.from_moneybox_id}) to moneybox ({self.to_moneybox_id})"
 
-
 class PostMoneyboxApiConsumer(ApiConsumerFactory):
     """`POST:  /api/moneybox` consumer class."""
 
@@ -236,24 +283,25 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
         savings_amount: int = 0,
         savings_target: int | None = None,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.CREATE_MONEYBOX,
-        )
         self.name = name
         self.priority = priority
         self.savings_amount = savings_amount
         self.savings_target = savings_target
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-        self.post_data = {
+        post_data = {
             "name": self.name,
             "priority": self.priority,
             "savings_amount": self.savings_amount,
             "savings_target": self.savings_target,
         }
-        self.response = requests.post(self.url, json=self.post_data)
+
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.CREATE_MONEYBOX,
+            request=requests.post,
+            request_data=post_data,
+        )
 
     def __str__(self) -> str:
         """Parse the response of `POST:  /api/moneybox`
@@ -285,11 +333,6 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         savings_amount: int,
         savings_target: int | None,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.UPDATE_MONEYBOX,
-        )
         self.moneybox_id = moneybox_id
         self.new_priority = priority
         self.new_name = name
@@ -298,21 +341,27 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
 
         self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
 
-        self.patch_data = {}
+        patch_data = {}
 
         # if self.new_priority >= 0:
-        self.patch_data["priority"] = self.new_priority
+        patch_data["priority"] = self.new_priority
 
         if self.new_name:
-            self.patch_data["name"] = self.new_name
+            patch_data["name"] = self.new_name
 
         if self.new_savings_amount >= 0:
-            self.patch_data["savings_amount"] = self.new_savings_amount
+            patch_data["savings_amount"] = self.new_savings_amount
 
         if self.new_savings_target is None or self.new_savings_target >= 0:
-            self.patch_data["savings_target"] = self.new_savings_target
+            patch_data["savings_target"] = self.new_savings_target
 
-        self.response = requests.patch(self.url, json=self.patch_data)
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.UPDATE_MONEYBOX,
+            request=requests.patch,
+            request_data=patch_data,
+        )
 
     def __str__(self) -> str:
         """Parse the response of `PATCH:  /api/moneybox/{moneybox_id}`
@@ -341,16 +390,15 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
         moneybox_id: int,
         n: int | None,
     ):
+        self.moneybox_id = moneybox_id
+        self.n = n
+
         super().__init__(
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SHOW_MONEYBOX_LOGS,
+            request=requests.get,
         )
-        self.moneybox_id = moneybox_id
-        self.n = n
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
-        self.response = requests.get(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `GET: 	/api/moneybox/{moneybox_id}/transactions`
@@ -397,15 +445,14 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
         self,
         moneybox_id: int,
     ):
+        self.moneybox_id = moneybox_id
+
         super().__init__(
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.DELETE_MONEYBOX,
+            request=requests.delete,
         )
-        self.moneybox_id = moneybox_id
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint.value.replace('{moneybox_id}', str(self.moneybox_id))}"
-        self.response = requests.delete(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `DELETE:  /api/moneybox/{moneybox_id}`
@@ -429,10 +476,8 @@ class GetPriorityListApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.GET_PRIORITYLIST,
+            request=requests.get,
         )
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-        self.response = requests.get(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/prioritylist`
@@ -462,20 +507,17 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         move_direction: MoveDirection,
         move_steps: int,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.UPDATE_PRIORITYLIST,
-        )
-
         self.moneybox_id = moneybox_id
         self.move_direction = move_direction
         self.move_steps = move_steps
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-        self.response = None
-        patch_data = self._build_patch_data()
-        self.response = requests.patch(self.url, json=patch_data)
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.UPDATE_PRIORITYLIST,
+            request=requests.patch,
+            request_data=self._build_patch_data,
+        )
 
     def _build_patch_data(self) -> dict[str, list[dict[str, int | str]]]:
         """Build the new priority list dict data.
@@ -484,8 +526,8 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         :rtype: :class:`dict[str, list[dict[str, int|str]]]`
         """
 
-        consumer = GetPriorityListApiConsumer()
-        priority_list = consumer.response.json()["priority_list"]
+        response = GetPriorityListApiConsumer().run()
+        priority_list = response.json()["priority_list"]
 
         # move logic
         priority_sorted_list = sorted(
@@ -551,10 +593,8 @@ class GetAppSettingsApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.GET_APPSETTINGS,
+            request=requests.get,
         )
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-        self.response = requests.get(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `GET: /api/settings`
@@ -585,11 +625,6 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         savings_amount: int,
         overflow_moneybox_automated_savings_mode: str,
     ):
-        super().__init__(
-            domain=BASE_URL,
-            port=PORT,
-            endpoint=Endpoint.UPDATE_APPSETTINGS,
-        )
         self.send_reports_via_email = send_reports_via_email
         self.user_email_address = user_email_address
         self.is_automated_saving_active = is_automated_saving_active
@@ -598,30 +633,34 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             overflow_moneybox_automated_savings_mode
         )
 
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-
-        self.patch_data = {}
+        patch_data = {}
 
         if self.send_reports_via_email >= 0:
-            self.patch_data["savings_amount"] = self.savings_amount
+            patch_data["savings_amount"] = self.savings_amount
 
         if self.user_email_address:
-            self.patch_data["user_email_address"] = self.user_email_address
+            patch_data["user_email_address"] = self.user_email_address
 
         if self.is_automated_saving_active >= 0:
-            self.patch_data["is_automated_saving_active"] = (
+            patch_data["is_automated_saving_active"] = (
                 self.is_automated_saving_active
             )
 
         if self.savings_amount >= 0:
-            self.patch_data["savings_amount"] = self.savings_amount
+            patch_data["savings_amount"] = self.savings_amount
 
         if self.overflow_moneybox_automated_savings_mode:
-            self.patch_data["overflow_moneybox_automated_savings_mode"] = (
+            patch_data["overflow_moneybox_automated_savings_mode"] = (
                 self.overflow_moneybox_automated_savings_mode
             )
 
-        self.response = requests.patch(self.url, json=self.patch_data)
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.UPDATE_APPSETTINGS,
+            request=requests.patch,
+            request_data=patch_data,
+        )
 
     def __str__(self) -> str:
         """Parse the response of `PATCH:  /api/settings`
@@ -652,10 +691,8 @@ class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SEND_TESTEMAIL,
+            request=requests.patch,
         )
-
-        self.url = f"{BASE_URL}:{PORT}{self.endpoint}"
-        self.response = requests.patch(self.url)
 
     def __str__(self) -> str:
         """Parse the response of `PATCH:  /api/email/send-testemail`
