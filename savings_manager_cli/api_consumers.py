@@ -552,7 +552,7 @@ class GetPriorityListApiConsumer(ApiConsumerFactory):
         if not self.response:
             exit_with_error(content=self.response.json())
 
-        content = self.response.json()["priority_list"]
+        content = self.response.json()["prioritylist"]
 
         headers = content[0].keys()
         rows = [list(priority.values()) for priority in content]
@@ -593,11 +593,11 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         """
 
         with GetPriorityListApiConsumer() as consumer:
-            priority_list = consumer.response.json()["priority_list"]
+            prioritylist = consumer.response.json()["prioritylist"]
 
         # move logic
         priority_sorted_list = sorted(
-            priority_list,
+            prioritylist,
             key=lambda item: item["priority"],
         )
 
@@ -623,7 +623,7 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
             priority["priority"] = i + 1
 
         return {
-            "priority_list": [
+            "prioritylist": [
                 {
                     "moneybox_id": priority["moneybox_id"],
                     "priority": priority["priority"],
@@ -643,7 +643,7 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         if not self.response:
             exit_with_error(content=self.response.json())
 
-        content = self.response.json()["priority_list"]
+        content = self.response.json()["prioritylist"]
 
         headers = content[0].keys()
         rows = [list(priority.values()) for priority in content]
