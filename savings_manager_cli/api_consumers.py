@@ -285,7 +285,7 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
 
         post_data = {
             "amount": amount,
-            "to_moneybox_id": to_moneybox_id,
+            "toMoneyboxId": to_moneybox_id,
             "description": description,
         }
 
@@ -330,8 +330,8 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
 
         post_data = {
             "name": self.name,
-            "savings_amount": self.savings_amount,
-            "savings_target": self.savings_target,
+            "savingsAmount": self.savings_amount,
+            "savingsTarget": self.savings_target,
         }
 
         super().__init__(
@@ -393,13 +393,13 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
             patch_data["name"] = self.new_name
 
         if self.new_savings_amount >= 0:
-            patch_data["savings_amount"] = self.new_savings_amount
+            patch_data["savingsAmount"] = self.new_savings_amount
 
         if self.new_savings_target >= 0:
-            patch_data["savings_target"] = self.new_savings_target
+            patch_data["savingsTarget"] = self.new_savings_target
 
         if clear_savings_target:
-            patch_data["savings_target"] = None
+            patch_data["savingsTarget"] = None
 
         super().__init__(
             domain=BASE_URL,
@@ -471,19 +471,19 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
         content = self.response.json()
 
         # sort by created_at
-        content["transaction_logs"].sort(key=lambda item: item["created_at"])
+        content["transactionLogs"].sort(key=lambda item: item["createdAt"])
 
         # filter and get last n entries
         if self.n is not None:
-            content["transaction_logs"] = content["transaction_logs"][-self.n :]
+            content["transactionLogs"] = content["transactionLogs"][-self.n :]
 
-        content["transaction_logs"] = [
+        content["transactionLogs"] = [
             {key: colorize_number(key, value) for key, value in data.items()}
-            for data in content["transaction_logs"]
+            for data in content["transactionLogs"]
         ]
 
-        headers = content["transaction_logs"][0].keys()
-        rows = [data.values() for data in content["transaction_logs"]]
+        headers = content["transactionLogs"][0].keys()
+        rows = [data.values() for data in content["transactionLogs"]]
 
         return_contents = [
             tabulate_str(headers=headers, rows=rows, showindex=True),
@@ -603,7 +603,7 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
 
         old_index = None
         for i, item in enumerate(priority_sorted_list):
-            if item["moneybox_id"] == self.moneybox_id:
+            if item["moneyboxId"] == self.moneybox_id:
                 old_index = i
                 break
         else:
@@ -625,7 +625,7 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         return {
             "prioritylist": [
                 {
-                    "moneybox_id": priority["moneybox_id"],
+                    "moneyboxId": priority["moneyboxId"],
                     "priority": priority["priority"],
                 }
                 for priority in priority_sorted_list
@@ -706,21 +706,21 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         patch_data = {}
 
         if self.send_reports_via_email >= 0:
-            patch_data["send_reports_via_email"] = bool(self.send_reports_via_email)
+            patch_data["sendReportsViaEmail"] = bool(self.send_reports_via_email)
 
         if self.user_email_address:
-            patch_data["user_email_address"] = self.user_email_address
+            patch_data["userEmailAddress"] = self.user_email_address
 
         if self.is_automated_saving_active >= 0:
-            patch_data["is_automated_saving_active"] = bool(
+            patch_data["isAutomatedSavingActive"] = bool(
                 self.is_automated_saving_active
             )
 
         if self.savings_amount >= 0:
-            patch_data["savings_amount"] = self.savings_amount
+            patch_data["savingsAmount"] = self.savings_amount
 
         if self.overflow_moneybox_automated_savings_mode:
-            patch_data["overflow_moneybox_automated_savings_mode"] = (
+            patch_data["overflowMoneyboxAutomatedSavingsMode"] = (
                 self.overflow_moneybox_automated_savings_mode
             )
 
