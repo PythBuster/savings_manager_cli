@@ -1,6 +1,5 @@
-import asyncio
 import http
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Callable
 
@@ -9,7 +8,8 @@ import typer
 from requests import Response
 
 from savings_manager_cli.custom_types import Endpoint, MoveDirection
-from savings_manager_cli.utils import colorize_number, exit_with_error, tabulate_str
+from savings_manager_cli.utils import (colorize_number, exit_with_error,
+                                       tabulate_str)
 
 BASE_URL = "http://localhost"
 PORT = 8001
@@ -33,10 +33,10 @@ class ApiConsumerFactory(ABC):
         request_method: http.HTTPMethod,
         request_data: dict[str, Any] | Callable | None = None,
     ):
-        self.domain = domain
-        self.port = port
-        self.endpoint = endpoint
-        self.response = None
+        self.domain: str = domain
+        self.port: int = port
+        self.endpoint: str = endpoint
+        self._response: Response|None = None
 
         if request_data is not None:
             if callable(request_data):
@@ -67,35 +67,33 @@ class ApiConsumerFactory(ABC):
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    async def __aenter__(self):
-        await self.async_run()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
-
     def run(self) -> Response:
         self.response = self.consumer_request()
         return self.response
 
-    async def async_run(self) -> Response:
-        loop = asyncio.get_event_loop()
-        self.response = await loop.run_in_executor(
-            None,
-            self.consumer_request,
-        )
-        return self.response
+    @property
+    def response(self) -> Response:
+        if self._response is None:
+            raise RuntimeError("No content available. Call run() before __str__.")
 
-    def __str__(self):
-        raise NotImplementedError()
+        return self._response
+
+    @response.setter
+    def response(self, response: Response) -> None:
+        self._response = response
+
+        if not self._response.ok:
+            exit_with_error(content=self.response.json())
+
+    @abstractmethod
+    def __str__(self) -> str:
+        """Must return a string representation of the API response."""
 
 
 class GetMoneyboxApiConsumer(ApiConsumerFactory):
     """`GET: /api/moneybox/{moneybox_id}` consumer class."""
 
     def __init__(self, moneybox_id: int | None):
-        self.moneybox_id = moneybox_id
-
         endpoint = (
             Endpoint.LIST_ALL_MONEYBOXES
             if moneybox_id is None
@@ -108,6 +106,8 @@ class GetMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.GET,
         )
 
+        self.moneybox_id = moneybox_id
+
     @property
     def url(self) -> str:
         return f"{BASE_URL}:{PORT}{self.endpoint.replace('{moneybox_id}', str(self.moneybox_id))}"
@@ -119,9 +119,6 @@ class GetMoneyboxApiConsumer(ApiConsumerFactory):
         :return: response json as a console str representation.
         :rtype: str
         """
-
-        if not self.response:
-            exit_with_error(content=self.response.json())
 
         content = self.response.json()
 
@@ -185,10 +182,6 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
-        self.moneybox_id = moneybox_id
-        self.amount = amount
-        self.description = description
-
         post_data = {"amount": amount, "description": description}
 
         super().__init__(
@@ -198,6 +191,10 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
+
+        self.moneybox_id = moneybox_id
+        self.amount = amount
+        self.description = description
 
     @property
     def url(self) -> str:
@@ -231,10 +228,6 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
-        self.moneybox_id = moneybox_id
-        self.amount = amount
-        self.description = description
-
         post_data = {"amount": amount, "description": description}
 
         super().__init__(
@@ -244,6 +237,10 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
+
+        self.moneybox_id = moneybox_id
+        self.amount = amount
+        self.description = description
 
     @property
     def url(self) -> str:
@@ -278,11 +275,6 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
-        self.from_moneybox_id = from_moneybox_id
-        self.to_moneybox_id = to_moneybox_id
-        self.amount = amount
-        self.description = description
-
         post_data = {
             "amount": amount,
             "toMoneyboxId": to_moneybox_id,
@@ -296,6 +288,11 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
+
+        self.from_moneybox_id = from_moneybox_id
+        self.to_moneybox_id = to_moneybox_id
+        self.amount = amount
+        self.description = description
 
     @property
     def url(self) -> str:
@@ -324,14 +321,10 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
         savings_amount: int = 0,
         savings_target: int | None = None,
     ):
-        self.name = name
-        self.savings_amount = savings_amount
-        self.savings_target = savings_target
-
         post_data = {
-            "name": self.name,
-            "savingsAmount": self.savings_amount,
-            "savingsTarget": self.savings_target,
+            "name": name,
+            "savingsAmount": savings_amount,
+            "savingsTarget": savings_target,
         }
 
         super().__init__(
@@ -341,6 +334,10 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
+
+        self.name = name
+        self.savings_amount = savings_amount
+        self.savings_target = savings_target
 
     @property
     def url(self) -> str:
@@ -381,22 +378,16 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
                 "You can't set savings target and clear it at same time."
             )
 
-        self.moneybox_id = moneybox_id
-        self.new_name = name
-        self.new_savings_amount = savings_amount
-        self.new_savings_target = savings_target
-        self.clear_savings_target = clear_savings_target
+        patch_data: dict[str, int|str|None] = {}
 
-        patch_data = {}
+        if name:
+            patch_data["name"] = name
 
-        if self.new_name:
-            patch_data["name"] = self.new_name
+        if savings_amount >= 0:
+            patch_data["savingsAmount"] = savings_amount
 
-        if self.new_savings_amount >= 0:
-            patch_data["savingsAmount"] = self.new_savings_amount
-
-        if self.new_savings_target >= 0:
-            patch_data["savingsTarget"] = self.new_savings_target
+        if savings_target >= 0:
+            patch_data["savingsTarget"] = savings_target
 
         if clear_savings_target:
             patch_data["savingsTarget"] = None
@@ -408,6 +399,12 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
         )
+
+        self.moneybox_id = moneybox_id
+        self.new_name = name
+        self.new_savings_amount = savings_amount
+        self.new_savings_target = savings_target
+        self.clear_savings_target = clear_savings_target
 
     @property
     def url(self) -> str:
@@ -440,15 +437,15 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
         moneybox_id: int,
         n: int | None,
     ):
-        self.moneybox_id = moneybox_id
-        self.n = n
-
         super().__init__(
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SHOW_MONEYBOX_LOGS,
             request_method=http.HTTPMethod.GET,
         )
+
+        self.moneybox_id = moneybox_id
+        self.n = n
 
     @property
     def url(self) -> str:
@@ -499,14 +496,14 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
         self,
         moneybox_id: int,
     ):
-        self.moneybox_id = moneybox_id
-
         super().__init__(
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.DELETE_MONEYBOX,
             request_method=http.HTTPMethod.DELETE,
         )
+
+        self.moneybox_id = moneybox_id
 
     @property
     def url(self) -> str:
@@ -569,10 +566,6 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         move_direction: MoveDirection,
         move_steps: int,
     ):
-        self.moneybox_id = moneybox_id
-        self.move_direction = move_direction
-        self.move_steps = move_steps
-
         super().__init__(
             domain=BASE_URL,
             port=PORT,
@@ -580,6 +573,10 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.PATCH,
             request_data=self._build_patch_data,
         )
+
+        self.moneybox_id = moneybox_id
+        self.move_direction = move_direction
+        self.move_steps = move_steps
 
     @property
     def url(self) -> str:
@@ -695,33 +692,23 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         savings_amount: int,
         overflow_moneybox_automated_savings_mode: str,
     ):
-        self.send_reports_via_email = send_reports_via_email
-        self.user_email_address = user_email_address
-        self.is_automated_saving_active = is_automated_saving_active
-        self.savings_amount = savings_amount
-        self.overflow_moneybox_automated_savings_mode = (
-            overflow_moneybox_automated_savings_mode
-        )
+        patch_data: dict[str, str|int|bool] = {}
 
-        patch_data = {}
+        if send_reports_via_email >= 0:
+            patch_data["sendReportsViaEmail"] = bool(send_reports_via_email)
 
-        if self.send_reports_via_email >= 0:
-            patch_data["sendReportsViaEmail"] = bool(self.send_reports_via_email)
+        if user_email_address:
+            patch_data["userEmailAddress"] = user_email_address
 
-        if self.user_email_address:
-            patch_data["userEmailAddress"] = self.user_email_address
+        if is_automated_saving_active >= 0:
+            patch_data["isAutomatedSavingActive"] = bool(is_automated_saving_active)
 
-        if self.is_automated_saving_active >= 0:
-            patch_data["isAutomatedSavingActive"] = bool(
-                self.is_automated_saving_active
-            )
+        if savings_amount >= 0:
+            patch_data["savingsAmount"] = savings_amount
 
-        if self.savings_amount >= 0:
-            patch_data["savingsAmount"] = self.savings_amount
-
-        if self.overflow_moneybox_automated_savings_mode:
+        if overflow_moneybox_automated_savings_mode:
             patch_data["overflowMoneyboxAutomatedSavingsMode"] = (
-                self.overflow_moneybox_automated_savings_mode
+                overflow_moneybox_automated_savings_mode
             )
 
         super().__init__(
@@ -730,6 +717,14 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
             endpoint=Endpoint.UPDATE_APPSETTINGS,
             request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
+        )
+
+        self.send_reports_via_email = send_reports_via_email
+        self.user_email_address = user_email_address
+        self.is_automated_saving_active = is_automated_saving_active
+        self.savings_amount = savings_amount
+        self.overflow_moneybox_automated_savings_mode = (
+            overflow_moneybox_automated_savings_mode
         )
 
     @property

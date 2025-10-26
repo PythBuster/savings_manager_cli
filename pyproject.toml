@@ -25,3 +25,6 @@ pylint = "^3.1.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+savings-manager = "savings_manager_cli.main:app"

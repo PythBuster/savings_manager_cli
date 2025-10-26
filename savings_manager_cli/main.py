@@ -1,23 +1,16 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, cast
 
 import typer
 
-from savings_manager_cli.api_consumers import (DeleteMoneyboxApiConsumer,
-                                               GetAppSettingsApiConsumer,
-                                               GetMoneyboxApiConsumer,
-                                               GetMoneyboxesApiConsumer,
-                                               GetMoneyboxTransactionsApiConsumer,
-                                               GetPriorityListApiConsumer,
-                                               PatchAppSettingsApiConsumer,
-                                               PatchMoneyboxApiConsumer,
-                                               PatchSendTestEmailApiConsumer,
-                                               PostMoneyboxApiConsumer,
-                                               PostMoneyboxBalanceAddApiConsumer,
-                                               PostMoneyboxBalanceSubApiConsumer,
-                                               PostMoneyboxBalanceTransferApiConsumer,
-                                               UpdatePriorityListApiConsumer)
+from savings_manager_cli.api_consumers import (
+    DeleteMoneyboxApiConsumer, GetAppSettingsApiConsumer,
+    GetMoneyboxApiConsumer, GetMoneyboxesApiConsumer,
+    GetMoneyboxTransactionsApiConsumer, GetPriorityListApiConsumer,
+    PatchAppSettingsApiConsumer, PatchMoneyboxApiConsumer,
+    PatchSendTestEmailApiConsumer, PostMoneyboxApiConsumer,
+    PostMoneyboxBalanceAddApiConsumer, PostMoneyboxBalanceSubApiConsumer,
+    PostMoneyboxBalanceTransferApiConsumer, UpdatePriorityListApiConsumer)
 from savings_manager_cli.custom_types import MoveDirection
-from savings_manager_cli.utils import int_or_none
 
 app = typer.Typer()
 
@@ -27,7 +20,7 @@ def list_specific_or_all_moneyboxes(
     moneybox_id: Annotated[Optional[int], typer.Argument()] = None,
 ):
     if moneybox_id is None:
-        consumer = GetMoneyboxesApiConsumer()
+        consumer: GetMoneyboxesApiConsumer|GetMoneyboxApiConsumer = GetMoneyboxesApiConsumer()
     else:
         consumer = GetMoneyboxApiConsumer(moneybox_id=moneybox_id)
 
@@ -105,8 +98,8 @@ def update_moneybox(
         moneybox_id=moneybox_id,
         name=name,
         savings_amount=savings_amount,
-        savings_target=savings_target,
-        clear_savings_target=clear_savings_target,
+        savings_target=cast(int, savings_target),
+        clear_savings_target=cast(bool, clear_savings_target),
     ) as consumer:
         print(consumer)
 
@@ -149,8 +142,8 @@ def update_pioritylist(
 ):
     try:
         move_direction = MoveDirection(direction)
-    except:
-        raise typer.BadParameter(f"{direction} unknown move direction.")
+    except Exception as ex:
+        raise typer.BadParameter(f"{direction} unknown move direction.") from ex
 
     with UpdatePriorityListApiConsumer(
         moneybox_id=moneybox_id,
@@ -194,11 +187,11 @@ def update_appsettings(
         overflow_moneybox_automated_savings_mode = "fill_up_limited_moneyboxes"
 
     with PatchAppSettingsApiConsumer(
-        send_reports_via_email=send_reports_via_email,
-        user_email_address=user_email_address,
-        is_automated_saving_active=is_automated_saving_active,
-        savings_amount=savings_amount,
-        overflow_moneybox_automated_savings_mode=overflow_moneybox_automated_savings_mode,
+        send_reports_via_email=cast(int, send_reports_via_email),
+        user_email_address=cast(str, user_email_address),
+        is_automated_saving_active=cast(int, is_automated_saving_active),
+        savings_amount=cast(int, savings_amount),
+        overflow_moneybox_automated_savings_mode=cast(str, overflow_moneybox_automated_savings_mode),
     ) as consumer:
         print(consumer)
 

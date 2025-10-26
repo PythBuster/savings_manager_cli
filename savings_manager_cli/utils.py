@@ -12,7 +12,7 @@ def int_or_none(raw: str) -> int | None:
 
 
 def exit_with_error(content: dict) -> None:
-    # TODO: parse error doct to console representation
+    # TODO: parse error doc to console representation
     print(content, file=sys.stderr)
     sys.exit(1)
 
