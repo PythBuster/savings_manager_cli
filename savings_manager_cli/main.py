@@ -3,13 +3,14 @@ from typing import Annotated, Optional, cast
 import typer
 
 from savings_manager_cli.api_consumers import (
-    DeleteMoneyboxApiConsumer, GetAppSettingsApiConsumer,
-    GetMoneyboxApiConsumer, GetMoneyboxesApiConsumer,
-    GetMoneyboxTransactionsApiConsumer, GetPriorityListApiConsumer,
+    DeleteMoneyboxApiConsumer, GetAppMetadataApiConsumer,
+    GetAppSettingsApiConsumer, GetMoneyboxApiConsumer,
+    GetMoneyboxesApiConsumer, GetMoneyboxTransactionsApiConsumer,
+    GetPriorityListApiConsumer, GetSavingsForecastApiConsumer,
     PatchAppSettingsApiConsumer, PatchMoneyboxApiConsumer,
     PatchSendTestEmailApiConsumer, PostMoneyboxApiConsumer,
     PostMoneyboxBalanceAddApiConsumer, PostMoneyboxBalanceSubApiConsumer,
-    PostMoneyboxBalanceTransferApiConsumer, UpdatePriorityListApiConsumer, GetSavingsForecastApiConsumer)
+    PostMoneyboxBalanceTransferApiConsumer, UpdatePriorityListApiConsumer)
 from savings_manager_cli.custom_types import MoveDirection
 
 app = typer.Typer()
@@ -20,7 +21,9 @@ def list_specific_or_all_moneyboxes(
     moneybox_id: Annotated[Optional[int], typer.Argument()] = None,
 ):
     if moneybox_id is None:
-        consumer: GetMoneyboxesApiConsumer|GetMoneyboxApiConsumer = GetMoneyboxesApiConsumer()
+        consumer: GetMoneyboxesApiConsumer | GetMoneyboxApiConsumer = (
+            GetMoneyboxesApiConsumer()
+        )
     else:
         consumer = GetMoneyboxApiConsumer(moneybox_id=moneybox_id)
 
@@ -191,9 +194,12 @@ def update_appsettings(
         user_email_address=cast(str, user_email_address),
         is_automated_saving_active=cast(int, is_automated_saving_active),
         savings_amount=cast(int, savings_amount),
-        overflow_moneybox_automated_savings_mode=cast(str, overflow_moneybox_automated_savings_mode),
+        overflow_moneybox_automated_savings_mode=cast(
+            str, overflow_moneybox_automated_savings_mode
+        ),
     ) as consumer:
         print(consumer)
+
 
 @app.command("savings-forecast")
 def savings_forecast_specific_or_all_moneyboxes(
@@ -207,9 +213,16 @@ def savings_forecast_specific_or_all_moneyboxes(
     with consumer:
         print(consumer)
 
+
 @app.command("send-testemail")
 def send_testemail():
     with PatchSendTestEmailApiConsumer() as consumer:
+        print(consumer)
+
+
+@app.command("info")
+def get_app_metadata():
+    with GetAppMetadataApiConsumer() as consumer:
         print(consumer)
 
 

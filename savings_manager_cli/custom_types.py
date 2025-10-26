@@ -53,3 +53,6 @@ class Endpoint(StrEnum):
 
     SEND_TESTEMAIL = "/api/email/send-testemail"
     """Send Testemail Endpoint."""
+
+    GET_APP_METADATA = "/api/app/metadata"
+    """GET Endpoint for getting app metadata (app information like version, description, etc.)."""

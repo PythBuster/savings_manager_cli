@@ -36,7 +36,7 @@ class ApiConsumerFactory(ABC):
         self.domain: str = domain
         self.port: int = port
         self.endpoint: str = endpoint
-        self._response: Response|None = None
+        self._response: Response | None = None
 
         if request_data is not None:
             if callable(request_data):
@@ -363,7 +363,7 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
                 "You can't set savings target and clear it at same time."
             )
 
-        patch_data: dict[str, int|str|None] = {}
+        patch_data: dict[str, int | str | None] = {}
 
         if name:
             patch_data["name"] = name
@@ -659,7 +659,7 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         savings_amount: int,
         overflow_moneybox_automated_savings_mode: str,
     ):
-        patch_data: dict[str, str|int|bool] = {}
+        patch_data: dict[str, str | int | bool] = {}
 
         if send_reports_via_email >= 0:
             patch_data["sendReportsViaEmail"] = bool(send_reports_via_email)
@@ -717,7 +717,7 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
 class GetSavingsForecastApiConsumer(ApiConsumerFactory):
     """`GET: /api/moneyboxes/savings_forecast` consumer class."""
 
-    def __init__(self, moneybox_id: int|None = None):
+    def __init__(self, moneybox_id: int | None = None):
         super().__init__(
             domain=BASE_URL,
             port=PORT,
@@ -746,7 +746,10 @@ class GetSavingsForecastApiConsumer(ApiConsumerFactory):
 
         if self.moneyboy_id is None:
             headers = ["moneyboxId", "reachedInMonths"]
-            rows = [[data["moneyboxId"], data["reachedInMonths"]] for data in content["moneyboxForecasts"]]
+            rows = [
+                [data["moneyboxId"], data["reachedInMonths"]]
+                for data in content["moneyboxForecasts"]
+            ]
         else:
             for item in content["moneyboxForecasts"]:
                 if self.moneyboy_id == item["moneyboxId"]:
@@ -755,7 +758,9 @@ class GetSavingsForecastApiConsumer(ApiConsumerFactory):
                 return "No data"
 
             headers = ["month", "amount"]
-            rows = [[data["month"], data["amount"]] for data in item["monthlyDistributions"]]
+            rows = [
+                [data["month"], data["amount"]] for data in item["monthlyDistributions"]
+            ]
 
         return tabulate_str(headers=headers, rows=rows)
 
@@ -791,3 +796,33 @@ class PatchSendTestEmailApiConsumer(ApiConsumerFactory):
             else "Failed sending test email."
         )
         return content
+
+
+class GetAppMetadataApiConsumer(ApiConsumerFactory):
+    """`GET: /api/app/metadata` consumer class."""
+
+    def __init__(self):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.GET_APP_METADATA,
+            request_method=http.HTTPMethod.GET,
+        )
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
+
+    def __str__(self) -> str:
+        """Parse the response of `GET: /api/settings`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        content = self.response.json()
+
+        headers = content.keys()
+        rows = [content.values()]
+        return tabulate_str(headers=headers, rows=rows)
