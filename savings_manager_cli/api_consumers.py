@@ -94,6 +94,8 @@ class GetMoneyboxApiConsumer(ApiConsumerFactory):
     """`GET: /api/moneybox/{moneybox_id}` consumer class."""
 
     def __init__(self, moneybox_id: int | None):
+        self.moneybox_id = moneybox_id
+
         endpoint = (
             Endpoint.LIST_ALL_MONEYBOXES
             if moneybox_id is None
@@ -105,8 +107,6 @@ class GetMoneyboxApiConsumer(ApiConsumerFactory):
             endpoint=endpoint,
             request_method=http.HTTPMethod.GET,
         )
-
-        self.moneybox_id = moneybox_id
 
     @property
     def url(self) -> str:
@@ -179,6 +179,10 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
+        self.moneybox_id = moneybox_id
+        self.amount = amount
+        self.description = description
+
         post_data = {"amount": amount, "description": description}
 
         super().__init__(
@@ -188,10 +192,6 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
-
-        self.moneybox_id = moneybox_id
-        self.amount = amount
-        self.description = description
 
     @property
     def url(self) -> str:
@@ -222,6 +222,10 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
+        self.moneybox_id = moneybox_id
+        self.amount = amount
+        self.description = description
+
         post_data = {"amount": amount, "description": description}
 
         super().__init__(
@@ -231,10 +235,6 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
-
-        self.moneybox_id = moneybox_id
-        self.amount = amount
-        self.description = description
 
     @property
     def url(self) -> str:
@@ -266,6 +266,11 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
         amount: int,
         description: str,
     ):
+        self.from_moneybox_id = from_moneybox_id
+        self.to_moneybox_id = to_moneybox_id
+        self.amount = amount
+        self.description = description
+
         post_data = {
             "amount": amount,
             "toMoneyboxId": to_moneybox_id,
@@ -279,11 +284,6 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
-
-        self.from_moneybox_id = from_moneybox_id
-        self.to_moneybox_id = to_moneybox_id
-        self.amount = amount
-        self.description = description
 
     @property
     def url(self) -> str:
@@ -315,6 +315,10 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             "savingsTarget": savings_target,
         }
 
+        self.name = name
+        self.savings_amount = savings_amount
+        self.savings_target = savings_target
+
         super().__init__(
             domain=BASE_URL,
             port=PORT,
@@ -322,10 +326,6 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.POST,
             request_data=post_data,
         )
-
-        self.name = name
-        self.savings_amount = savings_amount
-        self.savings_target = savings_target
 
     @property
     def url(self) -> str:
@@ -377,6 +377,12 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         if clear_savings_target:
             patch_data["savingsTarget"] = None
 
+        self.moneybox_id = moneybox_id
+        self.new_name = name
+        self.new_savings_amount = savings_amount
+        self.new_savings_target = savings_target
+        self.clear_savings_target = clear_savings_target
+
         super().__init__(
             domain=BASE_URL,
             port=PORT,
@@ -384,12 +390,6 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
             request_method=http.HTTPMethod.PATCH,
             request_data=patch_data,
         )
-
-        self.moneybox_id = moneybox_id
-        self.new_name = name
-        self.new_savings_amount = savings_amount
-        self.new_savings_target = savings_target
-        self.clear_savings_target = clear_savings_target
 
     @property
     def url(self) -> str:
@@ -419,15 +419,15 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
         moneybox_id: int,
         n: int | None,
     ):
+        self.moneybox_id = moneybox_id
+        self.n = n
+
         super().__init__(
             domain=BASE_URL,
             port=PORT,
             endpoint=Endpoint.SHOW_MONEYBOX_LOGS,
             request_method=http.HTTPMethod.GET,
         )
-
-        self.moneybox_id = moneybox_id
-        self.n = n
 
     @property
     def url(self) -> str:
