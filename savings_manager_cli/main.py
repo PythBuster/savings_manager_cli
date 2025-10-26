@@ -9,7 +9,7 @@ from savings_manager_cli.api_consumers import (
     PatchAppSettingsApiConsumer, PatchMoneyboxApiConsumer,
     PatchSendTestEmailApiConsumer, PostMoneyboxApiConsumer,
     PostMoneyboxBalanceAddApiConsumer, PostMoneyboxBalanceSubApiConsumer,
-    PostMoneyboxBalanceTransferApiConsumer, UpdatePriorityListApiConsumer)
+    PostMoneyboxBalanceTransferApiConsumer, UpdatePriorityListApiConsumer, GetSavingsForecastApiConsumer)
 from savings_manager_cli.custom_types import MoveDirection
 
 app = typer.Typer()
@@ -195,6 +195,17 @@ def update_appsettings(
     ) as consumer:
         print(consumer)
 
+@app.command("savings-forecast")
+def savings_forecast_specific_or_all_moneyboxes(
+    moneybox_id: Annotated[Optional[int], typer.Argument()] = None,
+):
+    if moneybox_id is None:
+        consumer = GetSavingsForecastApiConsumer()
+    else:
+        consumer = GetSavingsForecastApiConsumer(moneybox_id=moneybox_id)
+
+    with consumer:
+        print(consumer)
 
 @app.command("send-testemail")
 def send_testemail():

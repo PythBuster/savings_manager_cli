@@ -151,9 +151,6 @@ class GetMoneyboxesApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         if self.response.status_code == 204:
             return "No data"
 
@@ -208,9 +205,6 @@ class PostMoneyboxBalanceAddApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         content = self.response.json()
 
         headers = content.keys()
@@ -253,9 +247,6 @@ class PostMoneyboxBalanceSubApiConsumer(ApiConsumerFactory):
         :return: response json as a console str representation.
         :rtype: str
         """
-
-        if not self.response:
-            exit_with_error(content=self.response.json())
 
         content = self.response.json()
 
@@ -306,9 +297,6 @@ class PostMoneyboxBalanceTransferApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         return f"Transferred '{self.amount/100:.2f} €' from moneybox ({self.from_moneybox_id}) to moneybox ({self.to_moneybox_id})"
 
 
@@ -350,9 +338,6 @@ class PostMoneyboxApiConsumer(ApiConsumerFactory):
         :return: response json as a console str representation.
         :rtype: str
         """
-
-        if not self.response:
-            exit_with_error(content=self.response.json())
 
         content = self.response.json()
 
@@ -418,9 +403,6 @@ class PatchMoneyboxApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         content = self.response.json()
 
         headers = content.keys()
@@ -458,9 +440,6 @@ class GetMoneyboxTransactionsApiConsumer(ApiConsumerFactory):
         :return: response json as a console str representation.
         :rtype: str
         """
-
-        if not self.response:
-            exit_with_error(content=self.response.json())
 
         if self.response.status_code == 204:
             return "No data"
@@ -517,9 +496,6 @@ class DeleteMoneyboxApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         return f"Deleted moneybox ({self.moneybox_id})."
 
 
@@ -545,9 +521,6 @@ class GetPriorityListApiConsumer(ApiConsumerFactory):
         :return: response json as a console str representation.
         :rtype: str
         """
-
-        if not self.response:
-            exit_with_error(content=self.response.json())
 
         content = self.response.json()["prioritylist"]
 
@@ -637,9 +610,6 @@ class UpdatePriorityListApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         content = self.response.json()["prioritylist"]
 
         headers = content[0].keys()
@@ -670,9 +640,6 @@ class GetAppSettingsApiConsumer(ApiConsumerFactory):
         :return: response json as a console str representation.
         :rtype: str
         """
-
-        if not self.response:
-            exit_with_error(content=self.response.json())
 
         content = self.response.json()
 
@@ -739,13 +706,56 @@ class PatchAppSettingsApiConsumer(ApiConsumerFactory):
         :rtype: str
         """
 
-        if not self.response:
-            exit_with_error(content=self.response.json())
-
         content = self.response.json()
 
         headers = content.keys()
         rows = [content.values()]
+
+        return tabulate_str(headers=headers, rows=rows)
+
+
+class GetSavingsForecastApiConsumer(ApiConsumerFactory):
+    """`GET: /api/moneyboxes/savings_forecast` consumer class."""
+
+    def __init__(self, moneybox_id: int|None = None):
+        super().__init__(
+            domain=BASE_URL,
+            port=PORT,
+            endpoint=Endpoint.SAVINGS_FORECAST,
+            request_method=http.HTTPMethod.GET,
+        )
+
+        self.moneyboy_id = moneybox_id
+
+    @property
+    def url(self) -> str:
+        return f"{BASE_URL}:{PORT}{self.endpoint}"
+
+    def __str__(self) -> str:
+        """Parse the response of `GET: /api/moneyboxes`
+        to a console represented string and returns it.
+
+        :return: response json as a console str representation.
+        :rtype: str
+        """
+
+        if self.response.status_code == 204:
+            return "No data"
+
+        content = self.response.json()
+
+        if self.moneyboy_id is None:
+            headers = ["moneyboxId", "reachedInMonths"]
+            rows = [[data["moneyboxId"], data["reachedInMonths"]] for data in content["moneyboxForecasts"]]
+        else:
+            for item in content["moneyboxForecasts"]:
+                if self.moneyboy_id == item["moneyboxId"]:
+                    break
+            else:
+                return "No data"
+
+            headers = ["month", "amount"]
+            rows = [[data["month"], data["amount"]] for data in item["monthlyDistributions"]]
 
         return tabulate_str(headers=headers, rows=rows)
 

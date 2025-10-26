@@ -48,5 +48,8 @@ class Endpoint(StrEnum):
     UPDATE_APPSETTINGS = "/api/settings"
     """UPDATE Endpoint for get app settings."""
 
+    SAVINGS_FORECAST = "/api/moneyboxes/savings_forecast"
+    """GET Endpoint for savings forecast."""
+
     SEND_TESTEMAIL = "/api/email/send-testemail"
     """Send Testemail Endpoint."""
